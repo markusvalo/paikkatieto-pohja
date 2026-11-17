@@ -32,7 +32,7 @@ jobs:
       MML_API_KEY: ${{ secrets.MML_API_KEY }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Asenna pixi
         run: |
