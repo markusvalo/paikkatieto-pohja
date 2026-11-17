@@ -93,6 +93,23 @@ alueen sisällä toisin kuin keskipiste.
 `web/index.html` samaan R2-bucketiin tai GitHub Pagesiin ja avaa
 `index.html?pmtiles=<url>&nimi=Rakennukset&lahde=Helsingin+kaupunki`.
 
+## Mainin suojaus (ruleset)
+
+Tiedosto `.github/rulesets/main.json` sisältää säännöt oletushaaralle:
+
+- Force push ja haaran poisto on estetty.
+- Muutokset tulevat PR:n kautta. Hyväksyjää ei vaadita, joten sääntö toimii myös yksin työskennellessä.
+- CI-tarkistuksen `testit` on mentävä läpi.
+- Repon ylläpitäjä voi ohittaa säännöt hätätilanteessa.
+
+Template ei kopioi asetuksia, joten ruleset tuodaan jokaiseen uuteen repoon erikseen:
+
+1. Lataa `.github/rulesets/main.json` koneellesi (avaa tiedosto GitHubissa → *Download raw file*).
+2. *Settings → Rules → Rulesets → New ruleset → Import a ruleset* → valitse tiedosto.
+3. Tarkista säännöt ja paina *Create*.
+
+GitHubin ilmaisella henkilötilillä rulesetit ovat voimassa vain julkisissa repoissa.
+
 ## Ennen ensimmäistä oikeaa projektia
 
 - [ ] Valitse lisenssi koodille (esim. MIT) ja lisää `LICENSE`
