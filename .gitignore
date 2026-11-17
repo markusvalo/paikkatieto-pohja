@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Ympäristöt
+.pixi/
+.venv/
+venv/
+
+# Data – ei Gitiin. Pienet testiaineistot: tests/data/
+data/raw/*
+data/processed/*
+data/products/*
+!data/**/.gitkeep
+
+# Paikkatiedon välitiedostot
+*.aux.xml
+*.ovr
+*.qgz~
+*.qgs~
+*.gpkg-shm
+*.gpkg-wal
+*.lock
+!pixi.lock
+
+# Salaisuudet
+.env
+.env.*
+*.key
+
+# Käyttöjärjestelmä ja editorit
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json

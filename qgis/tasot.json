@@ -1,0 +1,16 @@
+{
+  "projektin_epsg": 3879,
+  "tasot": [
+    {
+      "nimi": "Rakennukset – Kallio (GeoParquet)",
+      "url": "https://<oma-bucket>.r2.dev/tuotteet/aineisto.parquet",
+      "tyyppi": "vektori",
+      "tyyli": "tyylit/rakennukset.qml"
+    },
+    {
+      "nimi": "Paikallinen esimerkki (GeoPackage)",
+      "url": "../data/products/aineisto.gpkg",
+      "tyyppi": "vektori"
+    }
+  ]
+}

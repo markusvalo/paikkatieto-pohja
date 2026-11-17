@@ -1,0 +1,58 @@
+# Lähderekisteri. Jokainen lähde: mistä, missä koordinaatistossa, millä lisenssillä.
+# Agentti ja putket lukevat tämän – älä kovakoodaa URL-osoitteita skripteihin.
+#
+# Kentät:
+#   nimi, tyyppi (ogc_api_features | wfs | tiedosto), url, epsg, lisenssi, attribuutio
+#   kokoelma        OGC API -kokoelma tai WFS-tason nimi (typeNames)
+#   paivitys        kuinka usein lähde päivittyy (vapaa teksti)
+#   api_avain_env   ympäristömuuttuja, josta API-avain luetaan (EI itse avainta!)
+#   huom            vapaa huomautus
+#
+# HUOM: alla olevat esimerkit on kirjoitettu pohjaa varten, eikä niiden URL-osoitteita ja
+# tasonimiä ole tarkistettu verkosta. Tarkista GetCapabilities / /collections ennen käyttöä.
+
+lahteet:
+
+  mml_rakennukset:
+    nimi: MML Maastotietokanta – rakennukset
+    tyyppi: ogc_api_features
+    url: https://avoin-paikkatieto.maanmittauslaitos.fi/maastotiedot/features/v1
+    kokoelma: rakennus
+    epsg: 3067
+    api_avain_env: MML_API_KEY
+    lisenssi: CC BY 4.0
+    attribuutio: "Sisältää Maanmittauslaitoksen Maastotietokannan aineistoa"
+    paivitys: jatkuva
+    huom: API-avain maksutta MML:n asiointipalvelusta. Rajaa aina bboxilla – koko Suomi on raskas.
+
+  hki_rakennukset:
+    nimi: Helsingin rakennukset (rekisteritiedot)
+    tyyppi: wfs
+    url: https://kartta.hel.fi/ws/geoserver/avoindata/wfs
+    kokoelma: avoindata:Rakennukset_alue_rekisteritiedot
+    epsg: 3879
+    lisenssi: CC BY 4.0
+    attribuutio: "Helsingin kaupunki, kaupunkimittauspalvelut"
+    paivitys: viikoittain
+    huom: Tarkista tason nimi GetCapabilities-vastauksesta.
+
+  tk_postinumeroalueet:
+    nimi: Tilastokeskus – postinumeroalueet ja Paavo-tunnusluvut
+    tyyppi: wfs
+    url: https://geo.stat.fi/geoserver/postialue/wfs
+    kokoelma: postialue:pno_tilasto_2024
+    epsg: 3067
+    lisenssi: CC BY 4.0
+    attribuutio: "Tilastokeskus, Paavo – postinumeroalueittainen avoin tieto"
+    paivitys: vuosittain
+    huom: Vuosi on tason nimessä – päivitä vuosittain.
+
+  gisco_nuts2:
+    nimi: Eurostat GISCO – NUTS 2 -alueet 1:20M
+    tyyppi: tiedosto
+    url: https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_2.geojson
+    epsg: 4326
+    lisenssi: EuroGeographics
+    attribuutio: "© EuroGeographics for the administrative boundaries"
+    paivitys: NUTS-luokituksen mukaan (~3 v)
+    huom: Analysoi LAEA:ssa (3035), jaa WGS84:ssä. Tarkista käyttöehdot kaupalliseen käyttöön.

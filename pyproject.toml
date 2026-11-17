@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "paikka"
+version = "0.1.0"
+description = "Paikkatietoprojektien pohja: koordinaattijärjestelmät, merkistöt, aineistotarkistukset ja julkaisu."
+readme = "README.md"
+requires-python = ">=3.12"
+# Tarkat versiot lukitaan pixi.lock-tiedostoon. Nämä ovat alarajoja.
+dependencies = [
+    "geopandas>=1.0",
+    "pyogrio>=0.10",
+    "pyarrow>=16",
+    "pyproj>=3.6",
+    "shapely>=2.0",
+    "pyyaml>=6.0",
+    "requests>=2.32",
+]
+
+[project.scripts]
+paikka = "paikka.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/paikka"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+# N818: poikkeusten nimet ovat suomeksi (…Virhe). RUF001-003: suomenkielisissä merkkijonoissa on tarkoituksella ä, ö, å ja – -merkkejä.
+ignore = ["RUF001", "RUF002", "RUF003", "N818"]
+
+[tool.ruff.lint.per-file-ignores]
+# QGIS-skriptit noudattavat QGIS-API:n nimeämiskäytäntöjä (camelCase).
+"qgis/**" = ["N802", "N803", "N806", "F821"]

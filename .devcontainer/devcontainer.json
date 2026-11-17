@@ -1,0 +1,31 @@
+{
+  "name": "Paikkatieto (pixi + GDAL)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "curl -fsSL https://pixi.sh/install.sh | bash && ~/.pixi/bin/pixi install",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/.pixi/bin",
+    "PYTHONUTF8": "1",
+    "LANG": "C.UTF-8"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "redhat.vscode-yaml",
+        "github.vscode-github-actions",
+        "randomfractalsinc.geo-data-viewer"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.pixi/envs/default/bin/python",
+        "files.encoding": "utf8",
+        "files.eol": "\n",
+        "[python]": { "editor.defaultFormatter": "charliermarsh.ruff", "editor.formatOnSave": true }
+      }
+    }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "8gb" }
+}

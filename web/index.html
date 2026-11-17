@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Karttakatselin</title>
+  <!-- MapLibre + PMTiles: ei tiilipalvelinta, tiedosto luetaan suoraan R2:sta tai Pagesista. -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
+  <style>
+    html, body, #kartta { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    #otsikko { position: absolute; top: 10px; left: 10px; z-index: 1; background: #fff; padding: 8px 12px;
+      border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.3); font-size: 14px; max-width: 320px; }
+    .maplibregl-popup-content table { border-collapse: collapse; font-size: 12px; }
+    .maplibregl-popup-content td { padding: 2px 6px; border-bottom: 1px solid #eee; }
+  </style>
+</head>
+<body>
+  <div id="otsikko"><strong id="nimi">Karttakatselin</strong><br><span id="ohje">Klikkaa kohdetta.</span></div>
+  <div id="kartta"></div>
+  <script>
+    // Asetukset URL-parametreista: ?pmtiles=https://…/tiilet.pmtiles&nimi=Rakennukset&lahde=Helsingin+kaupunki
+    const p = new URLSearchParams(location.search);
+    const PMTILES = p.get("pmtiles") || "tiilet.pmtiles";
+    const NIMI = p.get("nimi") || "Karttakatselin";
+    // Tekstit escapetaan: URL-parametrit ja aineiston ominaisuudet voivat sisältää HTML:ää.
+    const esc = v => String(v).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m]);
+    const LAHDE = esc(p.get("lahde") || "");
+    const TASO = "aineisto"; // sama kuin tippecanoen --layer
+    document.getElementById("nimi").textContent = NIMI;
+
+    const protokolla = new pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles", protokolla.tile);
+
+    const kartta = new maplibregl.Map({
+      container: "kartta",
+      center: [24.94, 60.17], zoom: 12,
+      style: {
+        version: 8,
+        sources: {
+          // Taustakartta: OSM-tiilet sopivat kehitykseen ja pieneen käyttöön.
+          // Tuotantoon vaihda esim. MML:n taustakarttaan (API-avain) tai omiin PMTiles-tiiliin.
+          tausta: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256,
+                    attribution: "© OpenStreetMapin tekijät" },
+          aineisto: { type: "vector", url: `pmtiles://${PMTILES}`, attribution: LAHDE }
+        },
+        layers: [
+          { id: "tausta", type: "raster", source: "tausta", paint: { "raster-saturation": -0.8, "raster-opacity": 0.7 } },
+          { id: "alueet", type: "fill", source: "aineisto", "source-layer": TASO,
+            filter: ["==", ["geometry-type"], "Polygon"],
+            paint: { "fill-color": "#2b8cbe", "fill-opacity": 0.5, "fill-outline-color": "#08589e" } },
+          { id: "viivat", type: "line", source: "aineisto", "source-layer": TASO,
+            filter: ["==", ["geometry-type"], "LineString"], paint: { "line-color": "#08589e", "line-width": 2 } },
+          { id: "pisteet", type: "circle", source: "aineisto", "source-layer": TASO,
+            filter: ["==", ["geometry-type"], "Point"],
+            paint: { "circle-color": "#08589e", "circle-radius": 5, "circle-stroke-color": "#fff", "circle-stroke-width": 1 } }
+        ]
+      }
+    });
+    kartta.addControl(new maplibregl.NavigationControl());
+    kartta.addControl(new maplibregl.ScaleControl({ unit: "metric" }));
+
+    // Rajaa näkymä aineistoon PMTiles-otsakkeen perusteella.
+    new pmtiles.PMTiles(PMTILES).getHeader().then(h => {
+      kartta.fitBounds([[h.minLon, h.minLat], [h.maxLon, h.maxLat]], { padding: 40, duration: 0 });
+    }).catch(() => { document.getElementById("ohje").textContent = "Tiilitiedostoa ei löytynyt: " + PMTILES; });
+
+    const muotoile = v => typeof v === "number" ? v.toLocaleString("fi-FI") : esc(v);
+    for (const taso of ["alueet", "viivat", "pisteet"]) {
+      kartta.on("click", taso, e => {
+        const rivit = Object.entries(e.features[0].properties)
+          .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${muotoile(v)}</td></tr>`).join("");
+        new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<table>${rivit}</table>`).addTo(kartta);
+      });
+      kartta.on("mouseenter", taso, () => kartta.getCanvas().style.cursor = "pointer");
+      kartta.on("mouseleave", taso, () => kartta.getCanvas().style.cursor = "");
+    }
+  </script>
+</body>
+</html>

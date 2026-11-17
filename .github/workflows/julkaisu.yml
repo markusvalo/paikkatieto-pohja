@@ -1,0 +1,76 @@
+# Ajastettu haku → tarkistus → lopputuotteet → PMTiles → Cloudflare R2.
+#
+# Tarvittavat salaisuudet (Settings → Secrets and variables → Actions):
+#   MML_API_KEY            MML:n avoimien rajapintojen avain (jos käytät MML-lähteitä)
+#   R2_ACCOUNT_ID          Cloudflare-tilin tunnus
+#   R2_ACCESS_KEY_ID       R2 API -tunnuksen avain (oikeus vain yhteen bucketiin!)
+#   R2_SECRET_ACCESS_KEY
+# Muuttuja (Variables):
+#   R2_BUCKET              bucketin nimi
+#
+# Ilman R2-salaisuuksia tuotteet tallentuvat vain ajon artefakteiksi (Actions → ajo → Artifacts).
+name: Julkaisu
+
+on:
+  schedule:
+    - cron: "17 3 * * 1" # maanantaisin 03:17 UTC (05:17 / 06:17 Suomen aikaa)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write # epäonnistuneesta ajosta avataan issue
+
+concurrency:
+  group: julkaisu
+  cancel-in-progress: false
+
+jobs:
+  julkaise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MML_API_KEY: ${{ secrets.MML_API_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Asenna pixi
+        run: |
+          curl -fsSL https://pixi.sh/install.sh | bash
+          echo "$HOME/.pixi/bin" >> "$GITHUB_PATH"
+
+      - name: Ympäristö
+        run: pixi install
+
+      - name: Aja putki
+        run: pixi run esimerkki
+
+      - name: Vektoritiilet (PMTiles)
+        run: pixi run pmtiles
+
+      - name: Tallenna artefaktit
+        uses: actions/upload-artifact@v4
+        with:
+          name: tuotteet-${{ github.run_number }}
+          path: data/products/
+          retention-days: 30
+
+      - name: Lähetä R2:een
+        if: ${{ env.R2_ACCOUNT_ID != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          aws s3 sync data/products/ "s3://${{ vars.R2_BUCKET }}/tuotteet/" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --exclude "*" --include "*.parquet" --include "*.pmtiles" --include "*.csv" \
+            --include "*.gpkg" --include "*.txt" --no-progress
+
+      - name: Ilmoita epäonnistumisesta
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Julkaisuajo epäonnistui $(date -u +%F)" \
+            --body "Ajo: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" || true

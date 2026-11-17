@@ -1,0 +1,22 @@
+# Rivinvaihdot normalisoidaan LF:ksi repossa; Windowsissa Git muuntaa tarvittaessa.
+* text=auto eol=lf
+
+# Windows-työkalut odottavat CRLF:ää
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# QGIS-tyylit ja -mallit ovat XML/JSON-tekstiä – diffattavissa
+*.qml text
+*.model3 text
+*.qgs text
+
+# Binääriset paikkatietomuodot – ei diffiä eikä rivinvaihtomuunnoksia
+*.gpkg binary
+*.parquet binary
+*.pmtiles binary
+*.tif binary
+*.qgz binary
+*.shp binary
+*.dbf binary
+*.shx binary
+*.xlsx binary

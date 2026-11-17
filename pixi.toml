@@ -1,0 +1,37 @@
+# Ympäristö: https://pixi.sh
+# Asennus: `pixi install`. Ensimmäisen asennuksen jälkeen commitoi pixi.lock – se lukitsee
+# täsmälliset versiot, jotta ympäristö on sama Codespacesissa, CI:ssä ja kotikoneella.
+
+[workspace]
+name = "paikkatieto-pohja"
+channels = ["conda-forge"]
+platforms = ["linux-64", "win-64", "osx-arm64"]
+
+[dependencies]
+python = "3.12.*"
+gdal = ">=3.10"
+geopandas = ">=1.0"
+pyogrio = ">=0.10"
+pyarrow = ">=16"
+pyproj = ">=3.6"
+shapely = ">=2.0"
+pyyaml = ">=6.0"
+requests = ">=2.32"
+python-duckdb = ">=1.1"
+pytest = ">=8"
+ruff = ">=0.8"
+
+[target.linux-64.dependencies]
+# Vektoritiilet (PMTiles) – käytössä julkaisuputkessa.
+tippecanoe = ">=2.60"
+
+[pypi-dependencies]
+paikka = { path = ".", editable = true }
+
+[tasks]
+test = "pytest"
+lint = "ruff check . && ruff format --check ."
+muotoile = "ruff format . && ruff check . --fix"
+paikka = "python -m paikka"
+esimerkki = "python putket/esimerkki_helsinki.py"
+pmtiles = "tippecanoe -o data/products/tiilet.pmtiles --force -zg --drop-densest-as-needed --layer=aineisto data/products/aineisto.geojson"
