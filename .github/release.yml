@@ -1,0 +1,20 @@
+# Julkaisutiedotteen kategoriat (GitHub: "Generate release notes"). Perustuu PR:ien labeleihin
+# (.github/labelit.yml). Projekti lisää tuotelabeliensa kategoriat "Rikkovat muutokset" -kohdan jälkeen.
+changelog:
+  categories:
+    - title: Rikkovat muutokset
+      labels: [rikkova]
+    - title: Kirjasto
+      labels: [kirjasto]
+    - title: QGIS
+      labels: [qgis]
+    - title: Korjaukset
+      labels: [bugi]
+    - title: Ajot, pilvi ja ympäristö
+      labels: [infra]
+    - title: Dokumentaatio
+      labels: [dokumentaatio]
+    - title: Muut
+      labels: ["*"]
+  exclude:
+    labels: [idea]

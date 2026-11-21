@@ -1,0 +1,24 @@
+name: Idea
+description: Ajatus myöhempään – ei vielä sitoumusta eikä releasea
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: "Ideaa ei kohdisteta releaseen eikä toteuteta kesken muun työn. Hyväksytty idea muutetaan tehtäväksi."
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: Mitä voisi selvittää, tuottaa tai parantaa?
+    validations:
+      required: true
+  - type: textarea
+    id: miksi
+    attributes:
+      label: Miksi
+      description: Mitä hyötyä? Mihin liittyy?
+  - type: textarea
+    id: aineistot
+    attributes:
+      label: Mahdolliset aineistot
+      description: Lähteet, alue, lisenssit. Ei henkilötietoja (CLAUDE.md).

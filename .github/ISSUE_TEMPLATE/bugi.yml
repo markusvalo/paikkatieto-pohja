@@ -1,0 +1,20 @@
+name: Bugi
+description: Virhe toiminnassa tai datassa
+labels: [bugi]
+body:
+  - type: textarea
+    id: oire
+    attributes:
+      label: Mitä tapahtui
+      description: Virheilmoitus, työnkulun ajo tai tuote ja taso, jossa virhe näkyy.
+    validations:
+      required: true
+  - type: textarea
+    id: odotettu
+    attributes:
+      label: Mitä piti tapahtua
+  - type: textarea
+    id: toisto
+    attributes:
+      label: Miten toistetaan
+      description: Komento, lähde, rajaus tai versio (dataversio, release, kirjaston tagi).
