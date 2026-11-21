@@ -2,7 +2,8 @@
 # Agentti ja putket lukevat tämän – älä kovakoodaa URL-osoitteita skripteihin.
 #
 # Kentät:
-#   nimi, tyyppi (ogc_api_features | wfs | tiedosto), url, epsg, lisenssi, attribuutio
+#   nimi, tyyppi (ogc_api_features | wfs | wfs_gml | tiedosto), url, epsg, lisenssi, attribuutio
+#   (wfs_gml: WFS 1.0.0 / GML2 ilman sivutusta, palveluille, jotka eivät tarjoa GeoJSONia)
 #   kokoelma        OGC API -kokoelma tai WFS-tason nimi (typeNames)
 #   paivitys        kuinka usein lähde päivittyy (vapaa teksti)
 #   api_avain_env   ympäristömuuttuja, josta API-avain luetaan (EI itse avainta!)
@@ -35,6 +36,17 @@ lahteet:
     attribuutio: "Helsingin kaupunki, kaupunkimittauspalvelut"
     paivitys: viikoittain
     huom: Tarkista tason nimi GetCapabilities-vastauksesta.
+
+  espoo_kaupunginosat:
+    nimi: Espoon kaupunginosat
+    tyyppi: wfs_gml
+    url: https://kartat.espoo.fi/teklaogcweb/wfs.ashx
+    kokoelma: GIS:Kaupunginosat
+    epsg: 3879
+    lisenssi: CC BY 4.0
+    attribuutio: "Espoon kaupunki, kaupunkiympäristön toimiala"
+    paivitys: tarvittaessa
+    huom: Esimerkki WFS 1.0 / GML2 -lähteestä (tarkistettu 21.11.2026). Palvelu ei tarjoa GeoJSONia.
 
   tk_postinumeroalueet:
     nimi: Tilastokeskus – postinumeroalueet ja Paavo-tunnusluvut

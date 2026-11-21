@@ -4,7 +4,8 @@ Moduulit:
     crs: koordinaattijärjestelmäprofiilit, muunnokset ja akselijärjestyksen tarkistus.
     merkisto: merkistöjen tunnistus, mojibake-korjaus, NFC-normalisointi, suomalainen lajittelu.
     tarkistus: aineiston laatutarkistukset (CRS, geometriat, alue, tekstit).
-    lahteet: lähderekisteri (config/lahteet.yaml) ja haut OGC API Features-, WFS- ja tiedostolähteistä.
+    lahteet: lähderekisteri (config/lahteet.yaml) ja haut OGC API Features-, WFS- (2.0, 1.0 / GML2)
+        ja tiedostolähteistä.
     vienti: viennit GeoParquet-, GeoPackage-, GeoJSON-, Shapefile- ja Power BI -muotoihin.
 
 Kirjasto jaetaan projekteihin versioituna pakettina tämän repon tageista (ADR 0004). Polut, kuten

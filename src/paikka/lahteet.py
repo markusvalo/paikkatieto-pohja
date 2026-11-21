@@ -10,9 +10,11 @@ koskaan kirjoiteta lokiin, metatietoihin eikä repoon.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
 import os
+import re
 from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
@@ -36,7 +38,8 @@ SIVUKOKO = 1000
 MAKSIMI_SIVUT = 1000  # Suojaa loputtomalta sivutukselta (1 000 × 1 000 = 1 milj. kohdetta).
 YRITYKSET = 4
 
-type LahdeTyyppi = Literal["ogc_api_features", "wfs", "tiedosto"]
+# wfs_gml: WFS 1.0.0 ja GML2 yhdellä pyynnöllä ilman sivutusta (palvelut, jotka eivät tarjoa GeoJSONia).
+type LahdeTyyppi = Literal["ogc_api_features", "wfs", "wfs_gml", "tiedosto"]
 type Rajaus = tuple[float, float, float, float]
 
 
@@ -160,6 +163,60 @@ def _wfs_sivut(lahde: Lahde, istunto: _Istunto, rajaus: Rajaus | None, rajaus_ep
     raise RuntimeError(f"Sivutus ylitti {MAKSIMI_SIVUT} sivua lähteessä {lahde.id}.")
 
 
+# GML:n srsName-muodot, joista EPSG-koodi tunnistetaan: "EPSG:3879", ".../epsg.xml#3879",
+# "urn:ogc:def:crs:EPSG::3879" ja "http://www.opengis.net/def/crs/EPSG/0/3879".
+_SRSNAME = re.compile(rb'srsName="([^"]*?(?:EPSG:|epsg\.xml#|EPSG::|/EPSG/0/)(\d+))"')
+_SCHEMALOCATION = re.compile(rb'\sxsi:schemaLocation="[^"]*"')
+
+
+def _wfs_gml(lahde: Lahde, istunto: _Istunto, rajaus: Rajaus | None, rajaus_epsg: int | None) -> gpd.GeoDataFrame:
+    """Hae WFS 1.0.0 -taso GML2-muodossa yhdellä pyynnöllä.
+
+    srsName-arvot muutetaan muotoon ``EPSG:<koodi>``, jotta GDAL ei yritä hakea määritelmää verkosta,
+    ja XSD-viittaus poistetaan, jotta kenttätyypit päätellään aina samalla tavalla aineistosta.
+    Koordinaattijärjestelmän on oltava sama kuin rekisterissä, muuten haku keskeytetään (ei arvausta).
+    WFS 1.0:ssa akselijärjestys on aina x=itä, y=pohjoinen.
+
+    Raises:
+        ValueError: Jos vastauksen srsName on eri järjestelmässä kuin rekisterissä tai rajaus on eri järjestelmässä.
+        RuntimeError: Jos palvelu palauttaa virheen (ServiceException).
+    """
+    parametrit: dict[str, Any] = {
+        "service": "WFS",
+        "version": "1.0.0",
+        "request": "GetFeature",
+        "typeName": lahde.kokoelma,
+        "srsName": f"EPSG:{lahde.epsg}",
+        "outputFormat": "GML2",
+        **lahde.lisaparametrit,
+        **_api_avain(lahde),
+    }
+    if rajaus:
+        if (rajaus_epsg or lahde.epsg) != lahde.epsg:
+            raise ValueError(f"WFS 1.0 -rajauksen on oltava lähteen järjestelmässä EPSG:{lahde.epsg}.")
+        parametrit["bbox"] = ",".join(str(v) for v in rajaus)
+    vastaus = istunto.get(lahde.url, params=parametrit, timeout=AIKAKATKAISU_S)
+    vastaus.raise_for_status()
+    data = vastaus.content
+    if b"ServiceException" in data[:4000]:
+        selitys = data[:4000].decode("utf-8", errors="replace").strip().replace("\n", " ")[:300]
+        raise RuntimeError(f"Lähde {lahde.id}: WFS-palvelu palautti virheen: {selitys}")
+    koodit = {int(k) for _, k in _SRSNAME.findall(data)}
+    if koodit - {lahde.epsg}:
+        raise ValueError(
+            f"Lähde {lahde.id}: vastaus on järjestelmässä {sorted(koodit)}, rekisterissä EPSG:{lahde.epsg}."
+        )
+    data = _SRSNAME.sub(f'srsName="EPSG:{lahde.epsg}"'.encode(), data)
+    data = _SCHEMALOCATION.sub(b"", data, count=1)
+    if b"featureMember" not in data:
+        return gpd.GeoDataFrame(geometry=[], crs=lahde.epsg)
+    gdf = gpd.read_file(io.BytesIO(data))
+    if "gml_id" in gdf.columns and gdf["gml_id"].isna().all():
+        gdf = gdf.drop(columns="gml_id")
+    # CRS on tarkistettu yllä srsName-arvoista; rekisterin arvo vastaa palvelun ilmoittamaa.
+    return gdf.set_crs(lahde.epsg, allow_override=True)
+
+
 def hae(
     lahde: Lahde,
     rajaus: Rajaus | None = None,
@@ -186,6 +243,8 @@ def hae(
         if gdf.crs is None:
             logger.warning("Tiedostossa ei ole CRS:ää – käytetään rekisterin arvoa EPSG:%s.", lahde.epsg)
             gdf = gdf.set_crs(lahde.epsg)
+    elif lahde.tyyppi == "wfs_gml":
+        gdf = _wfs_gml(lahde, istunto, rajaus, rajaus_epsg)
     else:
         sivuttaja = _ogc_sivut if lahde.tyyppi == "ogc_api_features" else _wfs_sivut
         kohteet = [k for sivu in sivuttaja(lahde, istunto, rajaus, rajaus_epsg) for k in sivu]
