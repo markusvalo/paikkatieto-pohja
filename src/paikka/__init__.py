@@ -2,6 +2,7 @@
 
 Moduulit:
     crs: koordinaattijärjestelmäprofiilit, muunnokset ja akselijärjestyksen tarkistus.
+    kiinteisto: kiinteistötunnuksen jäsennys ja esitysmuoto sekä kiinteistölaji tunnuksesta.
     merkisto: merkistöjen tunnistus, mojibake-korjaus, NFC-normalisointi, suomalainen lajittelu.
     tarkistus: aineiston laatutarkistukset (CRS, geometriat, alue, tekstit).
     tilastot: trendit (Theil–Sen, Mann–Kendall) ja keskittymät (Moranin I, Gi*, FDR) ilman lisäriippuvuuksia.

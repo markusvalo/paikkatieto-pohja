@@ -39,6 +39,7 @@ CLAUDE.md                 Agentin säännöt: CRS, merkistöt, lisenssit, kartog
 config/lahteet.yaml       Lähderekisteri: URL, CRS, lisenssi, attribuutio
 src/paikka/               Python-paketti
   crs.py                  Profiilit (3879, 3067, 3035, 4326), muunnokset, akselitarkistus
+  kiinteisto.py           Kiinteistötunnus (14 numeroa, esitysmuoto) ja kiinteistölaji
   merkisto.py             UTF-8/cp1252-tunnistus, mojibake, NFC, suomalainen lajittelu, CSV
   tarkistus.py            Laatutarkistukset ennen analyysia ja vientiä
   tilastot.py             Trendit ja spatiaaliset keskittymät (docs/menetelmat/)
