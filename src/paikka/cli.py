@@ -3,6 +3,7 @@
 Esimerkit::
 
     paikka lahteet
+    paikka kokoelmat hki_rakennukset
     paikka hae hki_rakennukset --rajaus 25496000 6672000 25498000 6674000
     paikka tarkista data/raw/hki_rakennukset/hki_rakennukset.parquet --alue suomi
     paikka ehdota-crs aineisto.gpkg
@@ -14,10 +15,12 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import sys
 from pathlib import Path
 
 import geopandas as gpd
+import requests
 
 from paikka import __version__, lahteet, tarkistus, vienti
 from paikka import crs as crs_mod
@@ -71,6 +74,53 @@ def _komento_hae(a: argparse.Namespace) -> int:
     return 1 if any(o.vakavuus == "virhe" for o in ongelmat) else 0
 
 
+def _kuvaa_wfs(lahde: lahteet.Lahde) -> bool:
+    """Tulosta WFS-lähteen tason tila palvelussa. Palauttaa, löytyikö taso."""
+    nimet = lahteet.tasonimet(lahteet.hae_capabilities(lahde, versio="1.0.0" if lahde.tyyppi == "wfs_gml" else "2.0.0"))
+    kokoelma = lahde.kokoelma or ""
+    merkit = re.findall(r"\{(\w+)\}", kokoelma)
+    if merkit:
+        arvot = lahteet.paikkamerkin_arvot(nimet, kokoelma, merkit[0])
+        print(f"  {'✓' if arvot else '✗'} {kokoelma}: {', '.join(arvot) or 'ei vastaavia tasoja'}")
+        return bool(arvot)
+    loytyi = kokoelma in nimet
+    print(f"  {'✓' if loytyi else '✗'} {kokoelma} {'löytyi' if loytyi else 'puuttuu'} ({len(nimet)} tasoa palvelussa)")
+    return loytyi
+
+
+def _komento_kokoelmat(a: argparse.Namespace) -> int:
+    rekisteri = _rekisteri(a)
+    haettavat = ("ogc_api_features", "wfs", "wfs_gml")
+    tunnukset = a.lahteet or [t for t, lh in rekisteri.items() if lh.tyyppi in haettavat]
+    paluu = 0
+    for tunnus in tunnukset:
+        if tunnus not in rekisteri:
+            print(f"✗ {tunnus}: ei rekisterissä")
+            paluu = 1
+            continue
+        lahde = rekisteri[tunnus]
+        print(f"\n{tunnus} ({lahde.tyyppi})")
+        try:
+            if lahde.tyyppi == "ogc_api_features":
+                k = lahteet.kuvaa_kokoelma(lahde)
+                ok = k["tukee_epsg"]
+                print(f"  {k['kokoelma']} ({k['otsikko']})")
+                tuetut = ", ".join(c.rsplit("/", 1)[-1] for c in k["crs"])
+                print(f"  {'✓' if ok else '✗'} EPSG:{lahde.epsg} tuettu. CRS:t: {tuetut}")
+                for nimi, arvo in k["kentat"].items():
+                    print(f"    {nimi:40} {str(arvo)[:50]}")
+            elif lahde.tyyppi in ("wfs", "wfs_gml"):
+                ok = _kuvaa_wfs(lahde)
+            else:
+                print("  (ei tarkistettavaa: lähdetyyppiä ei haeta palvelusta)")
+                ok = True
+        except (requests.RequestException, RuntimeError, ValueError) as e:  # raportoi kaikki, vaikka yksi kaatuu
+            print(f"  ✗ {e}")
+            ok = False
+        paluu |= 0 if ok else 1
+    return paluu
+
+
 def _komento_tarkista(a: argparse.Namespace) -> int:
     ongelmat = tarkistus.tarkista(
         _lue(a.tiedosto), alue=None if a.alue == "ei" else a.alue, pakolliset=a.pakolliset or ()
@@ -122,6 +172,10 @@ def rakenna_parseri() -> argparse.ArgumentParser:
     h.add_argument("--rajaus-epsg", type=int)
     h.add_argument("--raakadata", type=Path, default=RAAKADATA, help=f"Tallennuskansio (oletus: {RAAKADATA})")
     h.set_defaults(f=_komento_hae)
+
+    k = ali.add_parser("kokoelmat", help="Tarkista lähteiden kokoelmat ja tasot palvelussa (CRS:t, kentät, vuodet)")
+    k.add_argument("lahteet", nargs="*", help="Lähdetunnukset (oletus: kaikki OGC API- ja WFS-lähteet)")
+    k.set_defaults(f=_komento_kokoelmat)
 
     t = ali.add_parser("tarkista", help="Tarkista aineiston laatu")
     t.add_argument("tiedosto", type=Path)

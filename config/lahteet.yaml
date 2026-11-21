@@ -5,7 +5,8 @@
 #   nimi, tyyppi (ogc_api_features | wfs | wfs_gml | tiedosto | mcp | wms), url, epsg, lisenssi, attribuutio
 #   (wfs_gml: WFS 1.0.0 / GML2 ilman sivutusta, palveluille, jotka eivät tarjoa GeoJSONia;
 #    mcp: sijainniton MCP-palvelu, ei epsg:tä; wms: karttakuva vain QGISiin, putket eivät hae siitä)
-#   kokoelma        OGC API -kokoelma tai WFS-tason nimi (typeNames)
+#   kokoelma        OGC API -kokoelma tai WFS-tason nimi (typeNames); vaihtuva osa paikkamerkkinä
+#                   ({vuosi}, {jakso}), jonka putki täydentää: lahteet.taydenna()
 #   lisaparametrit  lisäparametrit hakuun, esim. {sortBy: id, cql_filter: "kunta='091'"}. GeoServerin
 #                   WFS-sivutus vaatii sortBy-lajittelun, jos tasolla ei ole pääavainta, eikä GeoServer
 #                   yhdistä bbox- ja cql_filter-rajausta (käytä silloin BBOX-ehtoa cql_filterissä).
@@ -14,7 +15,7 @@
 #   huom            vapaa huomautus
 #
 # HUOM: alla olevat esimerkit on kirjoitettu pohjaa varten, eikä niiden URL-osoitteita ja
-# tasonimiä ole tarkistettu verkosta. Tarkista GetCapabilities / /collections ennen käyttöä.
+# tasonimiä ole tarkistettu verkosta. Tarkista ne ennen käyttöä: `pixi run paikka kokoelmat <lähde>`.
 
 lahteet:
 
