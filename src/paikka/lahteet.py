@@ -39,7 +39,10 @@ MAKSIMI_SIVUT = 1000  # Suojaa loputtomalta sivutukselta (1 000 × 1 000 = 1 mil
 YRITYKSET = 4
 
 # wfs_gml: WFS 1.0.0 ja GML2 yhdellä pyynnöllä ilman sivutusta (palvelut, jotka eivät tarjoa GeoJSONia).
-type LahdeTyyppi = Literal["ogc_api_features", "wfs", "wfs_gml", "tiedosto"]
+# mcp: sijainniton MCP-palvelu (esim. arkistojen hakupalvelut), käytetään MCP-asiakkaalla, ei hae()-funktiolla.
+# wms: karttakuvapalvelu, jota vain QGIS lukee; putket eivät hae siitä dataa. Kirjataan rekisteriin lisenssin vuoksi.
+type LahdeTyyppi = Literal["ogc_api_features", "wfs", "wfs_gml", "tiedosto", "mcp", "wms"]
+SIJAINNITTOMAT: frozenset[str] = frozenset({"mcp"})  # tyypit, joilla ei ole koordinaattijärjestelmää
 type Rajaus = tuple[float, float, float, float]
 
 
@@ -51,9 +54,9 @@ class Lahde:
     nimi: str
     tyyppi: LahdeTyyppi
     url: str
-    epsg: int
     lisenssi: str
     attribuutio: str
+    epsg: int | None = None  # pakollinen paikkatietolähteille; sijainnittomilla (mcp) ei ole
     paivitys: str = "tuntematon"
     kokoelma: str | None = None  # OGC API Features -kokoelma tai WFS-tason nimi
     api_avain_env: str | None = None
@@ -80,6 +83,9 @@ def lataa_rekisteri(polku: Path) -> dict[str, Lahde]:
             lahteet[tunnus] = Lahde(id=tunnus, **kuvaus)
         except TypeError as e:
             raise ValueError(f"Lähteen '{tunnus}' kuvaus on virheellinen: {e}") from e
+        if lahteet[tunnus].epsg is None and lahteet[tunnus].tyyppi not in SIJAINNITTOMAT:
+            # CLAUDE.md, sääntö 1: paikkatietolähteen koordinaattijärjestelmä on aina tiedossa.
+            raise ValueError(f"Lähteeltä '{tunnus}' puuttuu epsg (pakollinen paikkatietolähteille).")
     return lahteet
 
 
@@ -103,10 +109,33 @@ def peita_avaimet(url: str) -> str:
 def _api_avain(lahde: Lahde) -> dict[str, str]:
     if not lahde.api_avain_env:
         return {}
-    avain = os.environ.get(lahde.api_avain_env)
+    # strip(): salaisuuteen jää helposti rivinvaihto tai välilyönti liitettäessä.
+    avain = (os.environ.get(lahde.api_avain_env) or "").strip()
     if not avain:
         raise RuntimeError(f"Lähde '{lahde.id}' vaatii API-avaimen ympäristömuuttujassa {lahde.api_avain_env}.")
     return {lahde.api_avain_parametri: avain}
+
+
+def _tarkista_vastaus(vastaus: requests.Response) -> None:
+    """Nosta virhe ilman API-avainta: requestsin oma virheilmoitus sisältää koko URL:n.
+
+    Raises:
+        RuntimeError: Jos vastaus on virhe (4xx/5xx). Viestissä on palvelimen selitys (esim. OWS
+            ExceptionReport tai JSON), jotta syy näkyy ilman uutta pyyntöä.
+    """
+    try:
+        vastaus.raise_for_status()
+    except requests.HTTPError:
+        selitys = (getattr(vastaus, "text", "") or "").strip().replace("\n", " ")[:300]
+        vinkki = {
+            400: " Tarkista parametrit (GeoServerin sivutus vaatii sortBy-lajittelun, jos tasolla ei ole pääavainta).",
+            401: " Tarkista API-avain.",
+            403: " API-avain puuttuu, on virheellinen tai sillä ei ole oikeutta palveluun.",
+            429: " Liikaa kyselyitä – yritä myöhemmin.",
+        }.get(vastaus.status_code, "")
+        raise RuntimeError(
+            f"HTTP {vastaus.status_code} {peita_avaimet(vastaus.url)}.{vinkki} Palvelin: {selitys or '(ei selitystä)'}"
+        ) from None
 
 
 def _crs_uri(epsg: int) -> str:
@@ -127,7 +156,7 @@ def _ogc_sivut(lahde: Lahde, istunto: _Istunto, rajaus: Rajaus | None, rajaus_ep
         parametrit["bbox-crs"] = _crs_uri(rajaus_epsg or lahde.epsg)
     for _ in range(MAKSIMI_SIVUT):
         vastaus = istunto.get(url, params=parametrit, timeout=AIKAKATKAISU_S)
-        vastaus.raise_for_status()
+        _tarkista_vastaus(vastaus)
         sisalto = vastaus.json()
         yield sisalto.get("features", [])
         seuraava = next((linkki["href"] for linkki in sisalto.get("links", []) if linkki.get("rel") == "next"), None)
@@ -155,7 +184,7 @@ def _wfs_sivut(lahde: Lahde, istunto: _Istunto, rajaus: Rajaus | None, rajaus_ep
         if rajaus:
             parametrit["bbox"] = ",".join(str(v) for v in rajaus) + f",EPSG:{rajaus_epsg or lahde.epsg}"
         vastaus = istunto.get(lahde.url, params=parametrit, timeout=AIKAKATKAISU_S)
-        vastaus.raise_for_status()
+        _tarkista_vastaus(vastaus)
         kohteet = vastaus.json().get("features", [])
         yield kohteet
         if len(kohteet) < SIVUKOKO:
@@ -196,7 +225,7 @@ def _wfs_gml(lahde: Lahde, istunto: _Istunto, rajaus: Rajaus | None, rajaus_epsg
             raise ValueError(f"WFS 1.0 -rajauksen on oltava lähteen järjestelmässä EPSG:{lahde.epsg}.")
         parametrit["bbox"] = ",".join(str(v) for v in rajaus)
     vastaus = istunto.get(lahde.url, params=parametrit, timeout=AIKAKATKAISU_S)
-    vastaus.raise_for_status()
+    _tarkista_vastaus(vastaus)
     data = vastaus.content
     if b"ServiceException" in data[:4000]:
         selitys = data[:4000].decode("utf-8", errors="replace").strip().replace("\n", " ")[:300]
@@ -233,7 +262,20 @@ def hae(
         rajaus: Valinnainen rajaus (minx, miny, maxx, maxy) järjestyksessä x=itä, y=pohjoinen.
         rajaus_epsg: Rajauksen järjestelmä (oletus: lähteen järjestelmä).
         istunto: HTTP-istunto (testeissä korvattavissa).
+
+    GeoJSON-kohteen tunniste (``id``) säilytetään kenttänä ``kohde_id``, jotta yksittäisen kohteen voi
+    jäljittää lähteeseen.
+
+    Raises:
+        ValueError: Jos lähde ei ole haettava paikkatietolähde (``mcp``, ``wms``).
+        RuntimeError: Jos palvelu palauttaa virheen.
     """
+    if lahde.tyyppi in SIJAINNITTOMAT or lahde.epsg is None:
+        raise ValueError(f"Lähde '{lahde.id}' ei ole paikkatietolähde – käytä MCP-asiakasta (paikka.mcp).")
+    if lahde.tyyppi == "wms":
+        raise ValueError(
+            f"Lähde '{lahde.id}' on karttakuvapalvelu (WMS), josta ei haeta kohteita – vain QGIS lukee sen."
+        )
     istunto = istunto or luo_istunto()
     logger.info("Haetaan %s (%s) – %s", lahde.id, lahde.tyyppi, peita_avaimet(lahde.url))
 
@@ -248,6 +290,10 @@ def hae(
     else:
         sivuttaja = _ogc_sivut if lahde.tyyppi == "ogc_api_features" else _wfs_sivut
         kohteet = [k for sivu in sivuttaja(lahde, istunto, rajaus, rajaus_epsg) for k in sivu]
+        for kohde in kohteet:
+            if "id" in kohde:
+                kohde["properties"] = kohde.get("properties") or {}
+                kohde["properties"].setdefault("kohde_id", kohde["id"])
         gdf = (
             gpd.GeoDataFrame.from_features(kohteet, crs=lahde.epsg)
             if kohteet

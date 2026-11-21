@@ -2,9 +2,13 @@
 # Agentti ja putket lukevat tämän – älä kovakoodaa URL-osoitteita skripteihin.
 #
 # Kentät:
-#   nimi, tyyppi (ogc_api_features | wfs | wfs_gml | tiedosto), url, epsg, lisenssi, attribuutio
-#   (wfs_gml: WFS 1.0.0 / GML2 ilman sivutusta, palveluille, jotka eivät tarjoa GeoJSONia)
+#   nimi, tyyppi (ogc_api_features | wfs | wfs_gml | tiedosto | mcp | wms), url, epsg, lisenssi, attribuutio
+#   (wfs_gml: WFS 1.0.0 / GML2 ilman sivutusta, palveluille, jotka eivät tarjoa GeoJSONia;
+#    mcp: sijainniton MCP-palvelu, ei epsg:tä; wms: karttakuva vain QGISiin, putket eivät hae siitä)
 #   kokoelma        OGC API -kokoelma tai WFS-tason nimi (typeNames)
+#   lisaparametrit  lisäparametrit hakuun, esim. {sortBy: id, cql_filter: "kunta='091'"}. GeoServerin
+#                   WFS-sivutus vaatii sortBy-lajittelun, jos tasolla ei ole pääavainta, eikä GeoServer
+#                   yhdistä bbox- ja cql_filter-rajausta (käytä silloin BBOX-ehtoa cql_filterissä).
 #   paivitys        kuinka usein lähde päivittyy (vapaa teksti)
 #   api_avain_env   ympäristömuuttuja, josta API-avain luetaan (EI itse avainta!)
 #   huom            vapaa huomautus

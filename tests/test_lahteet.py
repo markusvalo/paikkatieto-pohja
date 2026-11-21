@@ -109,3 +109,110 @@ def test_raakadata_tallennetaan_vain_muuttuessa(tmp_path: Path, tontti: gpd.GeoD
     assert lahteet.tallenna_raaka(tontti, lahde, tmp_path) is None
     meta = (tmp_path / "t" / "metatiedot.json").read_text(encoding="utf-8")
     assert "salainen" not in meta and "CC BY 4.0" in meta
+
+
+def test_http_virhe_ei_paljasta_avainta(monkeypatch: pytest.MonkeyPatch) -> None:
+    import requests
+
+    monkeypatch.setenv("TESTI_AVAIN", "  salainen\n")  # liitetty rivinvaihdon kanssa
+    vastaus = requests.Response()
+    vastaus.status_code = 403
+    vastaus.url = "https://esim.fi/collections/x/items?api-key=salainen"
+    vastaus._content = b'{"message": "Invalid API key"}'
+
+    class _Istunto:
+        params: dict[str, Any] | None = None
+
+        def get(self, url: str, params: dict[str, Any] | None = None, timeout: float = 0) -> requests.Response:
+            self.params = params
+            return vastaus
+
+    istunto = _Istunto()
+    lahde = lahteet.Lahde(
+        id="x",
+        nimi="x",
+        tyyppi="ogc_api_features",
+        url="https://esim.fi",
+        kokoelma="x",
+        epsg=3067,
+        lisenssi="x",
+        attribuutio="x",
+        api_avain_env="TESTI_AVAIN",
+    )
+    with pytest.raises(RuntimeError) as virhe:
+        lahteet.hae(lahde, istunto=istunto)
+    viesti = str(virhe.value)
+    assert "salainen" not in viesti
+    assert "403" in viesti and "Invalid API key" in viesti
+    assert virhe.value.__cause__ is None and virhe.value.__suppress_context__
+    assert istunto.params["api-key"] == "salainen"  # välilyönnit ja rivinvaihto poistettu
+
+
+def test_kohteen_id_sailyy() -> None:
+    lahde = lahteet.Lahde(
+        id="t",
+        nimi="t",
+        tyyppi="ogc_api_features",
+        url="https://esim.fi",
+        kokoelma="k",
+        epsg=3067,
+        lisenssi="x",
+        attribuutio="x",
+    )
+    kohde = {**_kohde(385_000, 6_672_000, "A"), "id": "123"}
+    ilman_ominaisuuksia = {
+        "type": "Feature",
+        "id": "124",
+        "properties": None,
+        "geometry": {"type": "Point", "coordinates": [385_001, 6_672_001]},
+    }
+    gdf = lahteet.hae(lahde, istunto=_ValeIstunto([{"features": [kohde, ilman_ominaisuuksia], "links": []}]))
+    assert list(gdf["kohde_id"]) == ["123", "124"]
+
+
+def test_epsg_pakollinen_paitsi_sijainnittomilla(tmp_path: Path) -> None:
+    rekisteri = tmp_path / "lahteet.yaml"
+    yhteiset = "lisenssi: x\n    attribuutio: x\n    url: https://esim.fi"
+    rekisteri.write_text(f"lahteet:\n  arkisto:\n    nimi: a\n    tyyppi: mcp\n    {yhteiset}\n", encoding="utf-8")
+    assert lahteet.lataa_rekisteri(rekisteri)["arkisto"].epsg is None
+    rekisteri.write_text(f"lahteet:\n  w:\n    nimi: w\n    tyyppi: wfs\n    {yhteiset}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="puuttuu epsg"):
+        lahteet.lataa_rekisteri(rekisteri)
+
+
+@pytest.mark.parametrize(("tyyppi", "epsg", "viesti"), [("mcp", None, "MCP"), ("wms", 3879, "WMS")])
+def test_ei_haettavat_lahteet(tyyppi: str, epsg: int | None, viesti: str) -> None:
+    lahde = lahteet.Lahde(
+        id="x", nimi="x", tyyppi=tyyppi, url="https://esim.fi", epsg=epsg, lisenssi="x", attribuutio="x"
+    )
+    with pytest.raises(ValueError, match=viesti):
+        lahteet.hae(lahde, istunto=_ValeIstunto([]))
+
+
+def test_lisaparametrit_valitetaan_wfs_hakuun() -> None:
+    import requests
+
+    class _Istunto:
+        params: dict[str, Any] | None = None
+
+        def get(self, url: str, params: dict[str, Any] | None = None, timeout: float = 0) -> requests.Response:
+            self.params = dict(params or {})
+            r = requests.Response()
+            r.status_code = 200
+            r._content = b'{"features": []}'
+            return r
+
+    istunto = _Istunto()
+    lahde = lahteet.Lahde(
+        id="w",
+        nimi="w",
+        tyyppi="wfs",
+        url="https://esim.fi/wfs",
+        kokoelma="t",
+        epsg=3879,
+        lisenssi="x",
+        attribuutio="x",
+        lisaparametrit={"sortBy": "id", "cql_filter": "kunta='091'"},
+    )
+    lahteet.hae(lahde, istunto=istunto)
+    assert istunto.params["sortBy"] == "id" and istunto.params["cql_filter"] == "kunta='091'"
