@@ -53,6 +53,19 @@ lahteet:
     paivitys: tarvittaessa
     huom: Esimerkki WFS 1.0 / GML2 -lähteestä (tarkistettu 21.11.2026). Palvelu ei tarjoa GeoJSONia.
 
+  kansallisarkisto_sisaltohaku:
+    nimi: Kansallisarkisto – Sisältöhaku, tuomiokirjat (HTR-litteroinnit)
+    tyyppi: mcp
+    url: https://sisaltohaku.demo.kansallisarkisto.fi/mcp/
+    kokoelma: tuomiokirjat
+    lisenssi: CC BY 4.0 (Kansallisarkiston digitaaliset aineistot, JHS 189; kuvailutiedot CC0)
+    attribuutio: "Kansallisarkisto, renovoidut tuomiokirjat (Sisältöhaku, Astia)"
+    paivitys: harvoin (demopalvelu, litterointeja lisätään)
+    huom: >-
+      Esimerkki sijainnittomasta MCP-lähteestä (paikka.mcp.Asiakas, työkalu search_index). Demopalvelu:
+      osoite ja työkalut voivat muuttua, joten haetaan enintään kutsu sekunnissa. Asiakirjoissa on
+      henkilötietoja: ks. CLAUDE.md, sääntö 7, ennen tekstin tallentamista.
+
   tk_postinumeroalueet:
     nimi: Tilastokeskus – postinumeroalueet ja Paavo-tunnusluvut
     tyyppi: wfs

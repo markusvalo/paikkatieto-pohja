@@ -42,6 +42,7 @@ src/paikka/               Python-paketti
   merkisto.py             UTF-8/cp1252-tunnistus, mojibake, NFC, suomalainen lajittelu, CSV
   tarkistus.py            Laatutarkistukset ennen analyysia ja vientiä
   lahteet.py              OGC API Features, WFS (2.0 sivutuksella, 1.0 / GML2) ja tiedostohaut
+  mcp.py                  MCP-asiakas (esim. arkistojen hakupalvelut, sijainniton data)
   vienti.py               GeoParquet, GeoPackage, GeoJSON, Shapefile, Power BI
 putket/                   Ajettavat putket (esimerkki: Helsingin rakennukset)
 tests/                    pytest, ei verkkoa

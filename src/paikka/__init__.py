@@ -6,6 +6,7 @@ Moduulit:
     tarkistus: aineiston laatutarkistukset (CRS, geometriat, alue, tekstit).
     lahteet: lähderekisteri (config/lahteet.yaml) ja haut OGC API Features-, WFS- (2.0, 1.0 / GML2)
         ja tiedostolähteistä.
+    mcp: pieni MCP-asiakas (Streamable HTTP) sijainnittomien palveluiden hakuihin.
     vienti: viennit GeoParquet-, GeoPackage-, GeoJSON-, Shapefile- ja Power BI -muotoihin.
 
 Kirjasto jaetaan projekteihin versioituna pakettina tämän repon tageista (ADR 0004). Polut, kuten
