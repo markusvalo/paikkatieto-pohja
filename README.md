@@ -100,7 +100,7 @@ Tiedosto `.github/rulesets/main.json` sisältää säännöt oletushaaralle:
 
 - Force push ja haaran poisto on estetty.
 - Muutokset tulevat PR:n kautta. Hyväksyjää ei vaadita, joten sääntö toimii myös yksin työskennellessä.
-- CI-tarkistuksen `testit` on mentävä läpi.
+- CI-tarkistusten `testit` ja `paketti` on mentävä läpi.
 - Repon ylläpitäjä voi ohittaa säännöt hätätilanteessa.
 
 Template ei kopioi asetuksia, joten ruleset tuodaan jokaiseen uuteen repoon erikseen:
@@ -110,6 +110,29 @@ Template ei kopioi asetuksia, joten ruleset tuodaan jokaiseen uuteen repoon erik
 3. Tarkista säännöt ja paina *Create*.
 
 GitHubin ilmaisella henkilötilillä rulesetit ovat voimassa vain julkisissa repoissa.
+
+## Kirjasto projekteissa
+
+`src/paikka` on versioitu kirjasto ([ADR 0004](docs/adr/0004-kirjaston-jakelu.md)). Pohjasta luotu projekti
+käyttää sitä riippuvuutena release-tagilla eikä pidä omaa kopiota:
+
+1. `pixi.toml`:
+   ```toml
+   [pypi-dependencies]
+   paikka = { git = "https://github.com/markusvalo/paikkatieto-pohja", tag = "v0.2.0" }
+   ```
+2. Poista projektista `src/paikka/`, kirjaston testit (`tests/test_crs.py`, `test_lahteet.py`,
+   `test_merkisto.py`, `test_tarkistus.py`, `test_vienti.py`, `test_cli.py`) ja `pyproject.toml`:n
+   `[build-system]`-, `[project]`- ja `[tool.hatch…]`-osiot. Projektiin jäävät putket, `config/`, tyylit ja
+   dokumentaatio.
+3. `pixi install` ja `pixi run test`.
+
+**Päivitys:** vaihda tagi, aja `pixi install` ja testit, ja lue release notesista *Rikkovat muutokset*.
+Komennot ajetaan projektin juuresta, koska lähderekisteri luetaan työhakemistosta (`config/lahteet.yaml`,
+tai `paikka --rekisteri <polku>`). Versio: `paikka --versio`.
+
+Yleishyödylliset parannukset tehdään tähän repoon ja tuodaan projektiin tagin vaihdolla. Projektissa voi
+kokeilla ensin, mutta vakiintunut ratkaisu siirretään pohjaan issuena.
 
 ## Tehtävät ja releaset
 
@@ -142,6 +165,6 @@ python -c "import yaml,json;print(json.dumps(yaml.safe_load(open('.github/labeli
 
 ## Tila
 
-Python-paketti on testattu (47 testiä, ruff). Julkaisuputkea, QGIS-skriptejä, verkkokatselinta
+Python-paketti on testattu (pytest ja ruff, CI:ssä myös asennettuna pakettina). Julkaisuputkea, QGIS-skriptejä, verkkokatselinta
 ja `lahteet.yaml`-tiedoston URL-osoitteita ei ole ajettu oikeita palveluita vasten, joten
 tarkista ne ensimmäisellä käyttökerralla.

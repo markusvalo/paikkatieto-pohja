@@ -1,4 +1,4 @@
-# Testit ja linttaus jokaisessa pushissa ja PR:ssä. Ei verkkoyhteyttä vaativia testejä.
+# Testit ja linttaus jokaisessa pushissa ja PR:ssä (ei verkkoa vaativia testejä) sekä kirjasto asennettuna pakettina.
 name: CI
 
 on:
@@ -40,3 +40,41 @@ jobs:
 
       - name: Testit
         run: pixi run test
+
+  paketti:
+    # Kirjasto asennettuna pakettina kuten projekteissa (ADR 0004): ei muokattavaa asennusta eikä repon
+    # polkuja, joten pakkauksesta puuttuvat moduulit ja polkuoletukset huomataan.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Asenna paketti erilliseen ympäristöön
+        run: |
+          python3 -m venv /tmp/v
+          /tmp/v/bin/pip install --quiet .
+
+      - name: Komentorivi ja tuonnit projektikansiosta
+        run: |
+          projekti=$(mktemp -d)
+          cp -r config "$projekti/"
+          cd "$projekti"
+          /tmp/v/bin/paikka --versio
+          /tmp/v/bin/paikka lahteet
+          /tmp/v/bin/python - <<'PY'
+          import importlib
+          import pkgutil
+
+          import paikka
+
+          moduulit = [m.name for m in pkgutil.iter_modules(paikka.__path__) if m.name != "__main__"]
+          for nimi in moduulit:
+              importlib.import_module(f"paikka.{nimi}")
+          assert not paikka.__version__.startswith("0+"), paikka.__version__
+          print(f"paikka {paikka.__version__}: {', '.join(moduulit)}")
+          PY
+
+      - name: Ilman rekisteriä komento kertoo syyn
+        run: |
+          cd "$(mktemp -d)"
+          if /tmp/v/bin/paikka lahteet; then echo "Odotettiin virhettä" && exit 1; fi
