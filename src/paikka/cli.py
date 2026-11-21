@@ -19,12 +19,27 @@ from pathlib import Path
 
 import geopandas as gpd
 
+from paikka import __version__, lahteet, tarkistus, vienti
 from paikka import crs as crs_mod
-from paikka import lahteet, tarkistus, vienti
 
-JUURI = Path(__file__).resolve().parents[2]
-REKISTERI = JUURI / "config" / "lahteet.yaml"
-RAAKADATA = JUURI / "data" / "raw"
+# Oletuspolut suhteessa työhakemistoon (projektin juuri). Kirjasto ei oleta omaa sijaintiaan,
+# koska se asennetaan projekteihin pakettina (ADR 0004).
+REKISTERI = Path("config") / "lahteet.yaml"
+RAAKADATA = Path("data") / "raw"
+
+
+def _rekisteri(a: argparse.Namespace) -> dict[str, lahteet.Lahde]:
+    """Lue lähderekisteri valitsimen ``--rekisteri`` polusta.
+
+    Raises:
+        FileNotFoundError: Jos rekisteriä ei ole (komento ajettu muualta kuin projektin juuresta).
+    """
+    if not a.rekisteri.exists():
+        raise FileNotFoundError(
+            f"Lähderekisteriä ei löydy: {a.rekisteri.resolve()}. Aja komento projektin juuresta tai anna --rekisteri."
+        )
+    return lahteet.lataa_rekisteri(a.rekisteri)
+
 
 logger = logging.getLogger("paikka")
 
@@ -35,14 +50,14 @@ def _lue(polku: Path) -> gpd.GeoDataFrame:
     return gpd.read_file(polku, engine="pyogrio")
 
 
-def _komento_lahteet(_: argparse.Namespace) -> int:
-    for l in lahteet.lataa_rekisteri(REKISTERI).values():  # noqa: E741
+def _komento_lahteet(a: argparse.Namespace) -> int:
+    for l in _rekisteri(a).values():  # noqa: E741
         print(f"{l.id:28} EPSG:{l.epsg:<5} {l.lisenssi:12} {l.nimi}")
     return 0
 
 
 def _komento_hae(a: argparse.Namespace) -> int:
-    rekisteri = lahteet.lataa_rekisteri(REKISTERI)
+    rekisteri = _rekisteri(a)
     if a.lahde not in rekisteri:
         print(f"Tuntematon lähde '{a.lahde}'. Katso: paikka lahteet", file=sys.stderr)
         return 2
@@ -51,7 +66,7 @@ def _komento_hae(a: argparse.Namespace) -> int:
     ongelmat = tarkistus.tarkista(gdf, alue=None)
     for o in ongelmat:
         print(o)
-    polku = lahteet.tallenna_raaka(gdf, lahde, RAAKADATA)
+    polku = lahteet.tallenna_raaka(gdf, lahde, a.raakadata)
     print(f"Tallennettu: {polku}" if polku else "Ei muutoksia edelliseen hakuun.")
     return 1 if any(o.vakavuus == "virhe" for o in ongelmat) else 0
 
@@ -93,6 +108,10 @@ def rakenna_parseri() -> argparse.ArgumentParser:
     """Komentorivin määrittely."""
     p = argparse.ArgumentParser(prog="paikka", description="Paikkatietoprojektin työkalut")
     p.add_argument("-v", "--verbose", action="store_true", help="Näytä DEBUG-loki")
+    p.add_argument("--versio", action="version", version=f"%(prog)s {__version__}")
+    p.add_argument(
+        "--rekisteri", type=Path, default=REKISTERI, help=f"Lähderekisteri (oletus: {REKISTERI} työhakemistossa)"
+    )
     ali = p.add_subparsers(dest="komento", required=True)
 
     ali.add_parser("lahteet", help="Listaa lähderekisteri").set_defaults(f=_komento_lahteet)
@@ -101,6 +120,7 @@ def rakenna_parseri() -> argparse.ArgumentParser:
     h.add_argument("lahde")
     h.add_argument("--rajaus", nargs=4, type=float, metavar=("MINX", "MINY", "MAXX", "MAXY"))
     h.add_argument("--rajaus-epsg", type=int)
+    h.add_argument("--raakadata", type=Path, default=RAAKADATA, help=f"Tallennuskansio (oletus: {RAAKADATA})")
     h.set_defaults(f=_komento_hae)
 
     t = ali.add_parser("tarkista", help="Tarkista aineiston laatu")
@@ -136,7 +156,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     try:
         return args.f(args)
-    except (ValueError, KeyError, RuntimeError, tarkistus.TarkistusVirhe) as e:
+    except (ValueError, KeyError, RuntimeError, FileNotFoundError, tarkistus.TarkistusVirhe) as e:
         logger.error("%s", e)
         return 1
 
