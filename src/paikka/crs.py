@@ -31,6 +31,10 @@ ASTE_TARKKUUS = 1e-7
 
 # Toleranssi alueen rajoille (asteina), jotta rannikon ja rajan kohteet eivät hylkäänny.
 ALUE_TOLERANSSI_ASTE = 0.05
+# Toleranssi projektion käyttöalueen ulkopuolelle (metriä). GK-kaistoja käytetään käytännössä
+# hieman kaistan yli (esim. kunnan reuna-alueet). Vaihtuneet akselit poikkeavat miljoonia metrejä,
+# joten väljä toleranssi ei heikennä niiden tunnistusta.
+KAYTTOALUE_TOLERANSSI_M = 20_000.0
 
 
 @dataclass(frozen=True)
@@ -152,8 +156,7 @@ def on_kayttoalueella(gdf: gpd.GeoDataFrame) -> bool:
     if epsg is None:
         raise ValueError("Aineiston CRS:llä ei ole EPSG-koodia.")
     alue = lonlat_rajat_projektioon(kayttoalue_lonlat(epsg), epsg)
-    # Toleranssi järjestelmän yksiköissä: metrisissä ~5 km, asteissa 0.05°.
-    tol = 5_000.0 if _crs(epsg).is_projected else ALUE_TOLERANSSI_ASTE
+    tol = KAYTTOALUE_TOLERANSSI_M if _crs(epsg).is_projected else ALUE_TOLERANSSI_ASTE
     return _sisalla(tuple(gdf.total_bounds), alue, tol)  # type: ignore[arg-type]
 
 

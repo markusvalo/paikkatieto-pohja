@@ -73,3 +73,10 @@ def test_pyoristys_millimetriin(helsinki_pisteet: gpd.GeoDataFrame) -> None:
 def test_tuntematon_profiili() -> None:
     with pytest.raises(KeyError):
         crs.profiili(2393)  # KKJ3 – muunnettava ennen käyttöä
+
+
+def test_gk25_kaistan_reuna_hyvaksytaan() -> None:
+    """Kaistan yli ~10 km (24,33° E, länsiosat GK25:ssä) on käytännössä tavallista eikä viittaa akselivirheeseen."""
+    reuna = _piste((24.33, 60.2)).to_crs(3879)
+    assert crs.on_kayttoalueella(reuna)
+    assert crs.korjaa_akselit_tarvittaessa(reuna) is reuna

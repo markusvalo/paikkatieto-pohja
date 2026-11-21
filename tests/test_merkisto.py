@@ -76,3 +76,16 @@ def test_csv_excel_fi_desimaalipilkku(tmp_path: Path) -> None:
     polku = tmp_path / "excel.csv"
     merkisto.kirjoita_csv(pd.DataFrame({"kunta": ["Åänekoski"], "ala": [1.5]}), polku, murre="excel_fi")
     assert "Åänekoski;1,5" in polku.read_text(encoding="utf-8-sig")
+
+
+def test_tyhjenna_mojibake_kirjaa_lokiin() -> None:
+    import pytest
+
+    df = pd.DataFrame({"nimi": ["Ã„ÃÃ„", "Ähtäri", None], "muu": ["MÃ¤ki", "a", "b"]}, index=[10, 11, 12])
+    tulos, loki = merkisto.tyhjenna_mojibake(df, ["nimi"])
+    assert tulos["nimi"].isna().tolist() == [True, False, True] and tulos["nimi"].iloc[1] == "Ähtäri"
+    assert tulos["muu"].iloc[0] == "MÃ¤ki"  # vain annetut sarakkeet
+    assert df["nimi"].iloc[0] == "Ã„ÃÃ„"  # alkuperäinen ennallaan
+    assert loki == [{"rivi": 10, "sarake": "nimi", "alkuperainen_arvo": "Ã„ÃÃ„"}]
+    with pytest.raises(KeyError, match="puuttuva"):
+        merkisto.tyhjenna_mojibake(df, ["puuttuva"])
