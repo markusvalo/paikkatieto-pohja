@@ -6,8 +6,8 @@ Hakee Helsingin rakennukset pieneltä alueelta (Kallio) GK25FIN:ssä ja tuottaa:
     data/products/aineisto.geojson   GeoJSON, WGS84 (→ PMTiles verkkokarttaan)
     data/products/aineisto_powerbi.csv  Power BI: lat/lon + WKT, UTF-8 BOM
 
-Aja: ``pixi run esimerkki``. Vaatii verkkoyhteyden. Tarkista lähteen tasonimi
-(config/lahteet.yaml) ennen ensimmäistä ajoa.
+Aja: ``pixi run esimerkki``. Vaatii verkkoyhteyden. Ajettu 21.11.2026 (277 rakennusta);
+tarkista lähde tarvittaessa: ``pixi run paikka kokoelmat hki_rakennukset``.
 """
 
 from __future__ import annotations

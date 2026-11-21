@@ -19,9 +19,8 @@ testit, tyylit, skriptit                  julkaisu (ajastettu):
 
 ## Pikaopas
 
-1. **Luo repo pohjasta.** Pura ZIP, luo GitHubiin uusi yksityinen repo ja vie tiedostot sinne
-   (selaimessa: *Add file → Upload files*). Merkitse se halutessasi pohjaksi:
-   *Settings → Template repository*.
+1. **Luo repo pohjasta:** *Use this template → Create a new repository* (yksityinen tai julkinen).
+   Ota kirjasto käyttöön tagilla, ks. [Kirjasto projekteissa](#kirjasto-projekteissa).
 2. **Avaa Codespace:** *Code → Codespaces → Create codespace on main*. Ympäristö
    (GDAL, GeoPandas, DuckDB, tippecanoe) asentuu automaattisesti, ja ensimmäinen kerta kestää muutaman minuutin.
 3. **Varmista ympäristö:** `pixi run test`. Kaikkien testien pitää mennä läpi.
@@ -136,8 +135,9 @@ käyttää sitä riippuvuutena release-tagilla eikä pidä omaa kopiota:
    [pypi-dependencies]
    paikka = { git = "https://github.com/markusvalo/paikkatieto-pohja", tag = "v0.2.0" }
    ```
-2. Poista projektista `src/paikka/`, kirjaston testit (`tests/test_crs.py`, `test_lahteet.py`,
-   `test_merkisto.py`, `test_tarkistus.py`, `test_vienti.py`, `test_cli.py`) ja `pyproject.toml`:n
+2. Poista projektista `src/paikka/`, kirjaston testit (`tests/test_capabilities.py`, `test_cli.py`,
+   `test_crs.py`, `test_kiinteisto.py`, `test_lahteet.py`, `test_mcp.py`, `test_merkisto.py`,
+   `test_tarkistus.py`, `test_tilastot.py`, `test_vienti.py`, `test_wfs_gml.py`) ja `pyproject.toml`:n
    `[build-system]`-, `[project]`- ja `[tool.hatch…]`-osiot. Projektiin jäävät putket, `config/`, tyylit ja
    dokumentaatio.
 3. `pixi install` ja `pixi run test`.
@@ -180,6 +180,8 @@ python -c "import yaml,json;print(json.dumps(yaml.safe_load(open('.github/labeli
 
 ## Tila
 
-Python-paketti on testattu (pytest ja ruff, CI:ssä myös asennettuna pakettina). Julkaisuputkea, QGIS-skriptejä, verkkokatselinta
-ja `lahteet.yaml`-tiedoston URL-osoitteita ei ole ajettu oikeita palveluita vasten, joten
-tarkista ne ensimmäisellä käyttökerralla.
+Python-paketti on testattu (pytest ja ruff, CI:ssä myös asennettuna pakettina). Esimerkkiputki
+(`pixi run esimerkki`) ja rekisterin lähteet `hki_rakennukset` ja `espoo_kaupunginosat` on ajettu
+oikeita palveluita vasten 21.11.2026. Julkaisutyönkulkua, QGIS-skriptejä, verkkokatselinta ja muiden
+lähteiden osoitteita ei ole ajettu, joten tarkista ne ensimmäisellä käyttökerralla
+(`pixi run paikka kokoelmat`).
