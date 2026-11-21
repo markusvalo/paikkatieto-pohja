@@ -2,6 +2,7 @@
 
 Moduulit:
     crs: koordinaattijärjestelmäprofiilit, muunnokset ja akselijärjestyksen tarkistus.
+    kiinteisto: kiinteistötunnuksen jäsennys ja esitysmuoto sekä kiinteistölaji tunnuksesta.
     merkisto: merkistöjen tunnistus, mojibake-korjaus, NFC-normalisointi, suomalainen lajittelu.
     tarkistus: aineiston laatutarkistukset (CRS, geometriat, alue, tekstit).
     lahteet: lähderekisteri (config/lahteet.yaml) ja haut OGC API Features-, WFS- (2.0, 1.0 / GML2)
