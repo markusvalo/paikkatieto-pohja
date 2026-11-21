@@ -69,3 +69,18 @@ def test_shapefile_tormaavat_nimet(tmp_path: Path, tontti: gpd.GeoDataFrame) -> 
     tontti["rakennusvuosi_2"] = 2
     with pytest.raises(ValueError, match="törmäävät"):
         vienti.vie_shapefile(tontti, tmp_path / "x.shp")
+
+
+def test_sijainnittomat_taulut(tmp_path: Path) -> None:
+    import unicodedata
+
+    import pyogrio
+
+    hajotettu = unicodedata.normalize("NFD", "Ähtäri")
+    df = pd.DataFrame({"tunnus": ["09100100010001"], "nimi": [hajotettu], "ala": [12.5]})
+    gpkg = vienti.vie_taulu_geopackage(df, tmp_path / "a" / "t.gpkg", "tiedot")
+    assert dict(pyogrio.list_layers(gpkg)) == {"tiedot": None}
+    luettu = pyogrio.read_dataframe(gpkg, layer="tiedot", read_geometry=False)
+    assert luettu["nimi"].iloc[0] == "Ähtäri" and luettu["tunnus"].iloc[0] == "09100100010001"  # NFC, etunolla
+    parquet = vienti.vie_taulu_parquet(df, tmp_path / "b" / "t.parquet")
+    assert pd.read_parquet(parquet)["nimi"].iloc[0] == "Ähtäri"

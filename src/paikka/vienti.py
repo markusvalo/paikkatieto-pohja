@@ -17,6 +17,8 @@ import unicodedata
 from pathlib import Path
 
 import geopandas as gpd
+import pandas as pd
+import pyogrio
 import shapely
 
 from paikka import crs as crs_mod
@@ -47,6 +49,25 @@ def vie_geopackage(gdf: gpd.GeoDataFrame, polku: Path, taso: str | None = None) 
     """GeoPackage (UTF-8 määritelmän mukaan)."""
     gdf = _valmistele(gdf, polku)
     gdf.to_file(polku, layer=taso or polku.stem, driver="GPKG", engine="pyogrio")
+    return polku
+
+
+def vie_taulu_geopackage(df: pd.DataFrame, polku: Path, taso: str) -> Path:
+    """Sijainniton taulu GeoPackageen omaksi tasokseen (esim. tunnuksella liitettävä johdettu taulu).
+
+    Tekstit NFC-normalisoidaan kuten tasoissa; mojibakea ei korjata hiljaa.
+    """
+    polku.parent.mkdir(parents=True, exist_ok=True)
+    pyogrio.write_dataframe(
+        merkisto.siivoa_tekstit(pd.DataFrame(df), korjaa_mojibakea=False), polku, layer=taso, driver="GPKG"
+    )
+    return polku
+
+
+def vie_taulu_parquet(df: pd.DataFrame, polku: Path) -> Path:
+    """Sijainniton taulu Parquetiksi (zstd), tekstit NFC-normalisoituna."""
+    polku.parent.mkdir(parents=True, exist_ok=True)
+    merkisto.siivoa_tekstit(pd.DataFrame(df), korjaa_mojibakea=False).to_parquet(polku, index=False, compression="zstd")
     return polku
 
 

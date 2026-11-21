@@ -154,6 +154,31 @@ def siivoa_tekstit(df: pd.DataFrame, korjaa_mojibakea: bool = True) -> pd.DataFr
     return tulos
 
 
+def tyhjenna_mojibake(df: pd.DataFrame, sarakkeet: list[str]) -> tuple[pd.DataFrame, list[dict[str, object]]]:
+    """Tyhjennä rikkinäiset tekstiarvot annetuista sarakkeista ja palauta loki.
+
+    Käytetään vain tietoisen päätöksen perusteella (CLAUDE.md, sääntö 4: mojibakea ei korjata hiljaa),
+    kun arvoa ei voi luotettavasti palauttaa. Loki sisältää rivin indeksin, sarakkeen ja alkuperäisen
+    arvon; kutsuja lisää siihen tarvittaessa kohteen tunnisteen ja sijainnin ja raportoi sen.
+
+    Returns:
+        (kopio, jossa rikkinäiset arvot on korvattu None-arvolla, lista tyhjennetyistä arvoista)
+
+    Raises:
+        KeyError: Jos saraketta ei ole.
+    """
+    tulos = df.copy()
+    loki: list[dict[str, object]] = []
+    for sarake in sarakkeet:
+        if sarake not in tulos.columns:
+            raise KeyError(f"Saraketta '{sarake}' ei ole. Sarakkeet: {list(tulos.columns)}")
+        rikki = tulos[sarake].map(lambda v: isinstance(v, str) and on_mojibake(v))
+        for rivi, arvo in tulos.loc[rikki, sarake].items():
+            loki.append({"rivi": rivi, "sarake": sarake, "alkuperainen_arvo": arvo})
+        tulos.loc[rikki, sarake] = None
+    return tulos, loki
+
+
 def kirjoita_csv(df: pd.DataFrame, polku: Path, murre: CsvMurre = "powerbi") -> None:
     """Kirjoita CSV, joka aukeaa oikein Excelissä ja Power BI:ssä.
 
