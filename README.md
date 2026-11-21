@@ -57,12 +57,23 @@ data/raw → processed → products   (ei Gitiin)
 
 ```bash
 pixi run paikka lahteet                                   # listaa lähderekisteri
+pixi run paikka kokoelmat hki_rakennukset                 # onko taso palvelussa, CRS:t, kentät, vuodet
 pixi run paikka hae hki_rakennukset --rajaus 25496500 6673500 25497500 6674500
 pixi run paikka tarkista aineisto.gpkg --alue suomi       # CRS, geometriat, ääkköset
 pixi run paikka ehdota-crs aineisto.gpkg                  # gk25 / tm35 / laea laajuuden mukaan
 pixi run paikka muunna aineisto.gpkg ulos.parquet --crs tm35
 pixi run paikka vie ulos.parquet raportti.csv --muoto powerbi
 ```
+
+Vuosittain tai jaksoittain vaihtuvat tasonimet kirjataan rekisteriin paikkamerkillä, esim.
+`kokoelma: "ns:Ruudukko_{vuosi}"`. Putki valitsee arvon palvelun tasoista ja täydentää lähteen:
+
+```python
+nimet = lahteet.tasonimet(lahteet.hae_capabilities(lahde))
+lahde_2024 = lahteet.taydenna(lahde, vuosi=lahteet.vuodet(nimet, lahde.kokoelma)[-1])
+```
+
+Puolivuotisjaksoille (`12026`, `I_2024`, `20170811`) on `lahteet.uusin_jakso()`.
 
 ## Koordinaattijärjestelmät lyhyesti
 

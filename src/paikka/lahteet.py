@@ -16,11 +16,12 @@ import logging
 import os
 import re
 from collections.abc import Iterator
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol
 from urllib.parse import urlsplit, urlunsplit
+from xml.etree import ElementTree
 
 import geopandas as gpd
 import requests
@@ -246,6 +247,154 @@ def _wfs_gml(lahde: Lahde, istunto: _Istunto, rajaus: Rajaus | None, rajaus_epsg
     return gdf.set_crs(lahde.epsg, allow_override=True)
 
 
+# --- Palvelun kuvaus ja vaihtuvat tasonimet -------------------------------------------------
+
+# Puolivuotisjakson merkinnät tasonimissä: "12026" (I/2026), "22025" (II/2025), "I_2024", "II_2024"
+# ja päivämäärä "20170811" (tammi–kesäkuu = I, heinä–joulukuu = II).
+_JAKSO = re.compile(r"^(?:([12])(\d{4})|(I{1,2})_(\d{4})|(\d{4})(\d{2})(\d{2}))$")
+
+
+def hae_capabilities(lahde: Lahde, istunto: _Istunto | None = None, versio: str = "2.0.0") -> str:
+    """WFS-palvelun GetCapabilities-vastaus tekstinä.
+
+    Raises:
+        ValueError: Jos lähde ei ole WFS-lähde.
+        RuntimeError: Jos palvelu palauttaa virheen.
+    """
+    if lahde.tyyppi not in ("wfs", "wfs_gml"):
+        raise ValueError(f"Lähde {lahde.id} ei ole WFS-lähde.")
+    istunto = istunto or luo_istunto()
+    parametrit = {"service": "WFS", "version": versio, "request": "GetCapabilities", **_api_avain(lahde)}
+    vastaus = istunto.get(lahde.url, params=parametrit, timeout=AIKAKATKAISU_S)
+    _tarkista_vastaus(vastaus)
+    return vastaus.text
+
+
+def tasonimet(capabilities: str) -> list[str]:
+    """Palvelun tasojen nimet (FeatureType/Name) GetCapabilities-vastauksesta, nimiavaruudesta riippumatta.
+
+    Raises:
+        ValueError: Jos vastaus ei ole XML:ää.
+    """
+    try:
+        juuri = ElementTree.fromstring(capabilities.encode("utf-8"))
+    except ElementTree.ParseError as e:
+        raise ValueError(f"GetCapabilities-vastaus ei ole XML:ää: {e}") from e
+    nimet = []
+    for elementti in juuri.iter():
+        if elementti.tag.rsplit("}", 1)[-1] == "FeatureType":
+            nimi = next((c.text for c in elementti if c.tag.rsplit("}", 1)[-1] == "Name" and c.text), None)
+            if nimi:
+                nimet.append(nimi.strip())
+    return nimet
+
+
+def paikkamerkin_arvot(nimet: list[str], kokoelma: str, paikkamerkki: str) -> list[str]:
+    """Arvot, joilla kokoelman paikkamerkki (esim. ``{vuosi}``) tuottaa palvelun tasonimen.
+
+    Esimerkki: kokoelma ``ns:Ruudukko_{vuosi}`` ja nimet ``ns:Ruudukko_2023``, ``ns:Ruudukko_2024`` →
+    ``["2023", "2024"]``.
+
+    Raises:
+        ValueError: Jos kokoelmassa ei ole paikkamerkkiä tai siinä on muita paikkamerkkejä.
+    """
+    merkki = "{" + paikkamerkki + "}"
+    if merkki not in kokoelma:
+        raise ValueError(f"Kokoelmassa {kokoelma} ei ole paikkamerkkiä {merkki}.")
+    alku, _, loppu = kokoelma.partition(merkki)
+    if "{" in alku + loppu:
+        raise ValueError(f"Kokoelmassa {kokoelma} on muita paikkamerkkejä kuin {merkki}.")
+    malli = re.compile(f"^{re.escape(alku)}(.+?){re.escape(loppu)}$")
+    return [m.group(1) for n in nimet if (m := malli.match(n))]
+
+
+def vuodet(nimet: list[str], kokoelma: str) -> list[int]:
+    """Kokoelman ``{vuosi}``-paikkamerkin vuodet palvelussa nousevassa järjestyksessä.
+
+    Raises:
+        ValueError: Jos palvelussa ei ole yhtään vuotta.
+    """
+    loydetyt = sorted({int(a) for a in paikkamerkin_arvot(nimet, kokoelma, "vuosi") if re.fullmatch(r"\d{4}", a)})
+    if not loydetyt:
+        raise ValueError(f"Palvelussa ei ole tasoa {kokoelma}.")
+    return loydetyt
+
+
+def jakso(tunniste: str) -> tuple[int, int] | None:
+    """Puolivuotisjakso (vuosi, 1 | 2) tasonimen osasta: ``12026`` → (2026, 1), ``I_2024`` → (2024, 1),
+    ``20170811`` → (2017, 2). Tuntematon muoto → None."""
+    m = _JAKSO.match(tunniste)
+    if not m:
+        return None
+    if m.group(1):
+        return int(m.group(2)), int(m.group(1))
+    if m.group(3):
+        return int(m.group(4)), len(m.group(3))
+    return int(m.group(5)), 1 if int(m.group(6)) <= 6 else 2
+
+
+def uusin_jakso(nimet: list[str], kokoelma: str) -> tuple[str, tuple[int, int]]:
+    """Kokoelman ``{jakso}``-paikkamerkin uusin arvo ja sen jakso.
+
+    Raises:
+        ValueError: Jos palvelussa ei ole yhtään tunnistettavaa jaksoa.
+    """
+    ehdokkaat = [(j, a) for a in paikkamerkin_arvot(nimet, kokoelma, "jakso") if (j := jakso(a))]
+    if not ehdokkaat:
+        raise ValueError(f"Palvelussa ei ole tasoa {kokoelma}.")
+    j, arvo = max(ehdokkaat)
+    return arvo, j
+
+
+def taydenna(lahde: Lahde, **arvot: object) -> Lahde:
+    """Lähde, jonka kokoelman paikkamerkit (esim. ``{vuosi}``) on korvattu annetuilla arvoilla.
+
+    Raises:
+        ValueError: Jos kokoelmaan jää paikkamerkki ilman arvoa.
+    """
+    if not lahde.kokoelma:
+        return lahde
+    try:
+        kokoelma = lahde.kokoelma.format(**arvot)
+    except KeyError as e:
+        raise ValueError(f"Lähteen {lahde.id} kokoelman paikkamerkille {e} ei annettu arvoa.") from e
+    return replace(lahde, kokoelma=kokoelma)
+
+
+def kuvaa_kokoelma(lahde: Lahde, istunto: _Istunto | None = None) -> dict[str, Any]:
+    """Tarkista OGC API Features -kokoelma: tuetut CRS:t ja esimerkkikohteen kentät.
+
+    Käytetään ennen uuden putken kirjoittamista varmistamaan, että rekisterin kokoelmanimi,
+    koordinaattijärjestelmä ja kenttänimet vastaavat rajapintaa.
+
+    Returns:
+        {"kokoelma", "otsikko", "crs": [...], "tukee_epsg": bool, "kentat": {nimi: esimerkkiarvo}}
+
+    Raises:
+        ValueError: Jos lähde ei ole OGC API Features -lähde.
+    """
+    if lahde.tyyppi != "ogc_api_features":
+        raise ValueError(f"Lähde {lahde.id} ei ole OGC API Features -lähde.")
+    istunto = istunto or luo_istunto()
+    perus = f"{lahde.url.rstrip('/')}/collections/{lahde.kokoelma}"
+    vastaus = istunto.get(perus, params={"f": "json", **_api_avain(lahde)}, timeout=AIKAKATKAISU_S)
+    _tarkista_vastaus(vastaus)
+    kuvaus = vastaus.json()
+    crs_lista = [str(c) for c in kuvaus.get("crs", [])]
+    kohteet = istunto.get(
+        f"{perus}/items", params={"f": "json", "limit": 1, **_api_avain(lahde)}, timeout=AIKAKATKAISU_S
+    )
+    _tarkista_vastaus(kohteet)
+    ensimmainen = next(iter(kohteet.json().get("features", [])), {})
+    return {
+        "kokoelma": lahde.kokoelma,
+        "otsikko": kuvaus.get("title", ""),
+        "crs": crs_lista,
+        "tukee_epsg": any(c.rstrip("/").endswith(f"/{lahde.epsg}") for c in crs_lista),
+        "kentat": dict(ensimmainen.get("properties") or {}),
+    }
+
+
 def hae(
     lahde: Lahde,
     rajaus: Rajaus | None = None,
@@ -275,6 +424,10 @@ def hae(
     if lahde.tyyppi == "wms":
         raise ValueError(
             f"Lähde '{lahde.id}' on karttakuvapalvelu (WMS), josta ei haeta kohteita – vain QGIS lukee sen."
+        )
+    if lahde.kokoelma and re.search(r"\{\w+\}", lahde.kokoelma):
+        raise ValueError(
+            f"Lähteen {lahde.id} kokoelmassa on paikkamerkki ({lahde.kokoelma}). Täydennä se: lahteet.taydenna()."
         )
     istunto = istunto or luo_istunto()
     logger.info("Haetaan %s (%s) – %s", lahde.id, lahde.tyyppi, peita_avaimet(lahde.url))
