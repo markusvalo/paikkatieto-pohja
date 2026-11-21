@@ -49,6 +49,7 @@ qgis/                     Tasojen lataus URL:sta, Processing-tarkistus, tyylit
 web/index.html            MapLibre + PMTiles -katselin
 docs/adr/                 Arkkitehtuuripäätökset (CRS, merkistöt, tiedostomuodot, kirjaston jakelu)
 docs/vaatimukset/         Vaatimusmäärittelyt (pohja: _pohja.md)
+docs/release-tarkistuslista.md   Tarkistukset ennen jokaista releasea
 data/raw → processed → products   (ei Gitiin)
 ```
 
