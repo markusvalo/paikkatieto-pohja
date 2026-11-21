@@ -20,7 +20,7 @@ muodossa (NFD), jolloin "ä" ei vastaa merkkiä "ä".
 | CSV suomalaiseen Exceliin | UTF-8 BOM, puolipiste erottimena, pilkku desimaalina (`murre="excel_fi"`) |
 | Shapefile (vain pakotettuna) | UTF-8 ja .cpg-tiedosto, ASCII-kenttänimet ≤ 10 merkkiä, muunnostaulukko mukaan |
 | GeoPackage, GeoParquet, GeoJSON | UTF-8 määritelmän mukaan |
-| Mojibake (`Ã¤`, `Ã¶`) | Tarkistus käsittelee sen virheenä. Korjaus tehdään tietoisesti `korjaa_mojibake()`-funktiolla, ei koskaan hiljaa |
+| Mojibake (`Ã¤`, `Ã¶`) | Tarkistus käsittelee sen virheenä. Korjaus tehdään tietoisesti `korjaa_mojibake()`-funktiolla, ei koskaan hiljaa. Jos arvoa ei voi palauttaa, `tyhjenna_mojibake()` tyhjentää sen ja palauttaa lokin raportoitavaksi |
 | Lajittelu | `suomi_lajitteluavain()`: å, ä, ö z:n jälkeen |
 | Python | `encoding="utf-8"` jokaisessa `open()`-kutsussa; Codespacesissa `PYTHONUTF8=1` |
 

@@ -28,7 +28,8 @@ suomeksi tai suomenkielisestä aineistosta.
 4. **Merkistö:** kaikki tiedostot UTF-8 ja NFC. Avaa tekstitiedostot aina `encoding="utf-8"`.
    Tuntemattomat tiedostot luetaan `merkisto.lue_teksti()`-funktiolla. CSV Exceliin ja
    Power BI:hin `merkisto.kirjoita_csv()` (UTF-8 BOM). Mojibakea (`Ã¤`, `Ã¶`) ei koskaan
-   korjata hiljaa: se raportoidaan ja korjataan tietoisesti.
+   korjata hiljaa: se raportoidaan ja korjataan tietoisesti (`merkisto.korjaa_mojibake()`, tai jos arvoa ei voi
+   palauttaa, `merkisto.tyhjenna_mojibake()`, joka palauttaa lokin raportoitavaksi).
 5. **Suomalainen lajittelu:** `sorted(..., key=merkisto.suomi_lajitteluavain)` (å, ä, ö z:n jälkeen).
 6. **Lisenssit:** jokainen lähde on kuvattu `config/lahteet.yaml`-tiedostossa lisenssin ja
    attribuution kanssa. Uutta lähdettä ei käytetä ennen kuin se on lisätty rekisteriin.
@@ -53,7 +54,10 @@ Tontista (~10 m, millimetritarkkuus) koko Suomeen (~1 200 km) ja joskus Eurooppa
 - Komentorivi: `pixi run paikka --help`.
 - Jokainen uusi analyysi tai putki saa testin. Testit eivät käytä verkkoa.
 - Aineisto tarkistetaan aina ennen vientiä: `tarkistus.varmista(tarkistus.tarkista(gdf, ...))`.
-- Vaatimukset: `docs/vaatimukset/`, arkkitehtuuripäätökset: `docs/adr/`.
+- Vaatimukset: `docs/vaatimukset/`, arkkitehtuuripäätökset: `docs/adr/`, menetelmäkuvaukset: `docs/menetelmat/`.
+- Uuden lähteen kokoelma, CRS-tuki ja kentät tarkistetaan ennen putken kirjoittamista: `pixi run paikka kokoelmat <lähde>`.
+- Kiinteistötunnukset käsitellään `paikka.kiinteisto`-moduulilla (14 numeroa, esitysmuoto, laji), trendit ja
+  keskittymät `paikka.tilastot`-moduulilla (menetelmät: `docs/menetelmat/trendit-ja-keskittymat.md`).
 - `src/paikka` on versioitu kirjasto, jota projektit käyttävät git-tagilla (ADR 0004). Pidä se
   geneerisenä: ei projektikohtaisia arvoja eikä oletuksia repon hakemistorakenteesta.
 - Commitit Conventional Commits -muodossa (`feat(lahteet): …`), rungossa *miksi*.

@@ -37,7 +37,10 @@ OGC API Features (`crs`-parametrilla) voivat palauttaa koordinaatit EPSG-järjes
 
 GK25FIN:ssä virhe näkyy selvästi, koska itäkoordinaatti alkaa kaistatunnuksella
 (≈ 25 497 000) ja pohjoiskoordinaatti on ≈ 6 673 000. `crs.on_kayttoalueella()` ja
-`crs.korjaa_akselit_tarvittaessa()` tunnistavat ja korjaavat vaihtuneet akselit.
+`crs.korjaa_akselit_tarvittaessa()` tunnistavat ja korjaavat vaihtuneet akselit. Käyttöalueen
+tarkistuksessa sallitaan 20 km kaistan yli (`crs.KAYTTOALUE_TOLERANSSI_M`), koska GK-kaistoja käytetään
+käytännössä hieman kaistan ulkopuolellakin. Vaihtuneet akselit poikkeavat miljoonia metrejä, joten
+toleranssi ei heikennä niiden tunnistusta.
 
 ## Seuraukset
 

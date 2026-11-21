@@ -3,6 +3,11 @@
 Lähteet kuvataan tiedostossa ``config/lahteet.yaml``. Jokaisella lähteellä on lisenssi ja
 attribuutio, jotka kulkevat raakadatan metatiedoissa lopputuotteisiin asti.
 
+Haettavat tyypit: OGC API Features, WFS 2.0 (sivutus) ja WFS 1.0 / GML2 (``wfs_gml``) sekä tiedostot.
+``mcp`` (paikka.mcp) ja ``wms`` (vain QGIS) kirjataan rekisteriin, mutta ``hae()`` torjuu ne.
+Palvelun kuvaus: ``hae_capabilities()``, ``tasonimet()``, ``kuvaa_kokoelma()``; vaihtuvat tasonimet
+paikkamerkeillä (``{vuosi}``, ``{jakso}``) ja ``taydenna()``.
+
 API-avaimet luetaan ympäristömuuttujista (GitHubissa: Settings → Secrets). Niitä ei
 koskaan kirjoiteta lokiin, metatietoihin eikä repoon.
 """
