@@ -41,7 +41,7 @@ src/paikka/               Python-paketti
   crs.py                  Profiilit (3879, 3067, 3035, 4326), muunnokset, akselitarkistus
   merkisto.py             UTF-8/cp1252-tunnistus, mojibake, NFC, suomalainen lajittelu, CSV
   tarkistus.py            Laatutarkistukset ennen analyysia ja vientiä
-  lahteet.py              OGC API Features, WFS ja tiedostohaut sivutuksella
+  lahteet.py              OGC API Features, WFS (2.0 sivutuksella, 1.0 / GML2) ja tiedostohaut
   vienti.py               GeoParquet, GeoPackage, GeoJSON, Shapefile, Power BI
 putket/                   Ajettavat putket (esimerkki: Helsingin rakennukset)
 tests/                    pytest, ei verkkoa
