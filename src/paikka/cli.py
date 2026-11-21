@@ -55,7 +55,8 @@ def _lue(polku: Path) -> gpd.GeoDataFrame:
 
 def _komento_lahteet(a: argparse.Namespace) -> int:
     for l in _rekisteri(a).values():  # noqa: E741
-        print(f"{l.id:28} EPSG:{l.epsg:<5} {l.lisenssi:12} {l.nimi}")
+        epsg = f"EPSG:{l.epsg}" if l.epsg else "sijainniton"
+        print(f"{l.id:28} {epsg:11} {l.lisenssi[:12]:12} {l.nimi}")
     return 0
 
 
