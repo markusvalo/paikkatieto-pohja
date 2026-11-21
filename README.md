@@ -111,6 +111,29 @@ Template ei kopioi asetuksia, joten ruleset tuodaan jokaiseen uuteen repoon erik
 
 GitHubin ilmaisella henkilötilillä rulesetit ovat voimassa vain julkisissa repoissa.
 
+## Tehtävät ja releaset
+
+Työ kulkee issuesta PR:ään ja releaseen:
+
+1. **Issue** pohjalla *Tehtävä* (hyväksytty työ, milestone eli release) tai *Idea* (ei milestonea, ei toteuteta
+   kesken muun työn). Virheet pohjalla *Bugi*.
+2. **PR** omasta haarasta: rungossa `Closes #N`, sama milestone ja label kuin issuella (PR-pohja muistuttaa).
+3. **Release:** milestonen viimeinen tehtävä on *Release-valmistelu vX.Y.Z* tarkistuslistan mukaan. Sen jälkeen
+   ylläpitäjä tekee tagin ja GitHub Releasen; *Generate release notes* ryhmittelee PR:t labelien mukaan
+   (`.github/release.yml`).
+
+Labelien perussetti on tiedostossa `.github/labelit.yml`: `tehtävä`, `idea`, `bugi`, `rikkova`, `dokumentaatio`,
+`infra`, `kirjasto` ja `qgis`. Projekti lisää omat tuotelabelinsa sekä listaan että release-kategorioihin.
+Labelit luodaan tai päivitetään uuteen repoon kerralla (Codespacesissa tai missä `gh` on kirjautuneena):
+
+```bash
+python -c "import yaml,json;print(json.dumps(yaml.safe_load(open('.github/labelit.yml',encoding='utf-8'))))" \
+  | jq -c '.[]' | while read -r l; do
+      gh label create "$(jq -r .name <<<"$l")" --color "$(jq -r .color <<<"$l")" \
+        --description "$(jq -r .description <<<"$l")" --force
+    done
+```
+
 ## Ennen ensimmäistä oikeaa projektia
 
 - [ ] Valitse lisenssi koodille (esim. MIT) ja lisää `LICENSE`

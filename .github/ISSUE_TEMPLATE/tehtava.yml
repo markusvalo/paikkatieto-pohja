@@ -1,0 +1,31 @@
+name: Tehtävä
+description: Hyväksytty työ – kohdista releaseen (milestone)
+labels: ["tehtävä"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Valitse oikealta **Milestone** (release) ja label, joka kertoo, mitä työ koskee (tuote, kirjasto, qgis, infra
+        tai dokumentaatio). Laajempi tuotos kuvataan vaatimuksena: `docs/vaatimukset/_pohja.md`.
+  - type: textarea
+    id: mita
+    attributes:
+      label: Mitä ja miksi
+    validations:
+      required: true
+  - type: textarea
+    id: valmis
+    attributes:
+      label: Valmis kun
+      value: |
+        - [ ] 
+        - [ ] testit
+        - [ ] README / vaatimus päivitetty tarvittaessa
+    validations:
+      required: true
+  - type: input
+    id: crs
+    attributes:
+      label: Koordinaattijärjestelmä
+      description: Analyysin CRS (ADR 0001). Jätä tyhjäksi, jos ei koske paikkatietoa.
+      placeholder: "EPSG:3879 / 3067 / 3035"

@@ -1,0 +1,11 @@
+# Labelien perussetti (ADR 0004, issue → PR → release -käytäntö). Projekti lisää omat tuotelabelinsa
+# (esim. "rakennukset: Tuote: rakennukset (V-001)") ja niille kategoriat tiedostoon .github/release.yml.
+# Luonti tai päivitys GitHubiin: ks. README, kohta "Tehtävät ja releaset".
+- {name: tehtävä, color: 0e8a16, description: "Hyväksytty työ, kohdistettu releaseen"}
+- {name: idea, color: c5def5, description: "Ajatus, ei vielä sitoumusta – ei milestonea"}
+- {name: bugi, color: d73a4a, description: "Virhe toiminnassa tai datassa"}
+- {name: rikkova, color: b60205, description: "Rikkova muutos: julkinen rajapinta, polku tai tuote muuttuu"}
+- {name: dokumentaatio, color: 0075ca, description: "README, CLAUDE.md, ADR, vaatimukset, ohjeet"}
+- {name: infra, color: 5319e7, description: "CI, työnkulut, pilvi, ympäristö"}
+- {name: kirjasto, color: 1d76db, description: "Python-paketti src/paikka"}
+- {name: qgis, color: "589632", description: "QGIS: tasot, tyylit, Processing, plugin"}
