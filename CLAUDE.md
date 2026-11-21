@@ -54,6 +54,8 @@ Tontista (~10 m, millimetritarkkuus) koko Suomeen (~1 200 km) ja joskus Eurooppa
 - Jokainen uusi analyysi tai putki saa testin. Testit eivät käytä verkkoa.
 - Aineisto tarkistetaan aina ennen vientiä: `tarkistus.varmista(tarkistus.tarkista(gdf, ...))`.
 - Vaatimukset: `docs/vaatimukset/`, arkkitehtuuripäätökset: `docs/adr/`.
+- `src/paikka` on versioitu kirjasto, jota projektit käyttävät git-tagilla (ADR 0004). Pidä se
+  geneerisenä: ei projektikohtaisia arvoja eikä oletuksia repon hakemistorakenteesta.
 - Commitit Conventional Commits -muodossa (`feat(lahteet): …`), rungossa *miksi*.
 
 ## Kartografia
