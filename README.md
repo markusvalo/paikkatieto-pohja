@@ -41,6 +41,7 @@ src/paikka/               Python-paketti
   crs.py                  Profiilit (3879, 3067, 3035, 4326), muunnokset, akselitarkistus
   merkisto.py             UTF-8/cp1252-tunnistus, mojibake, NFC, suomalainen lajittelu, CSV
   tarkistus.py            Laatutarkistukset ennen analyysia ja vientiä
+  tilastot.py             Trendit ja spatiaaliset keskittymät (docs/menetelmat/)
   lahteet.py              OGC API Features, WFS (2.0 sivutuksella, 1.0 / GML2) ja tiedostohaut
   mcp.py                  MCP-asiakas (esim. arkistojen hakupalvelut, sijainniton data)
   vienti.py               GeoParquet, GeoPackage, GeoJSON, Shapefile, Power BI
@@ -50,6 +51,7 @@ qgis/                     Tasojen lataus URL:sta, Processing-tarkistus, tyylit
 web/index.html            MapLibre + PMTiles -katselin
 docs/adr/                 Arkkitehtuuripäätökset (CRS, merkistöt, tiedostomuodot, kirjaston jakelu)
 docs/vaatimukset/         Vaatimusmäärittelyt (pohja: _pohja.md)
+docs/menetelmat/          Menetelmäkuvaukset lähdeviitteineen
 docs/release-tarkistuslista.md   Tarkistukset ennen jokaista releasea
 data/raw → processed → products   (ei Gitiin)
 ```

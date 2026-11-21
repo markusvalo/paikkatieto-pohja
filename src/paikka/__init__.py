@@ -4,6 +4,7 @@ Moduulit:
     crs: koordinaattijärjestelmäprofiilit, muunnokset ja akselijärjestyksen tarkistus.
     merkisto: merkistöjen tunnistus, mojibake-korjaus, NFC-normalisointi, suomalainen lajittelu.
     tarkistus: aineiston laatutarkistukset (CRS, geometriat, alue, tekstit).
+    tilastot: trendit (Theil–Sen, Mann–Kendall) ja keskittymät (Moranin I, Gi*, FDR) ilman lisäriippuvuuksia.
     lahteet: lähderekisteri (config/lahteet.yaml) ja haut OGC API Features-, WFS- (2.0, 1.0 / GML2)
         ja tiedostolähteistä.
     mcp: pieni MCP-asiakas (Streamable HTTP) sijainnittomien palveluiden hakuihin.
