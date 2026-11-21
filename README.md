@@ -47,7 +47,7 @@ putket/                   Ajettavat putket (esimerkki: Helsingin rakennukset)
 tests/                    pytest, ei verkkoa
 qgis/                     Tasojen lataus URL:sta, Processing-tarkistus, tyylit
 web/index.html            MapLibre + PMTiles -katselin
-docs/adr/                 Arkkitehtuuripäätökset (CRS, merkistöt, tiedostomuodot)
+docs/adr/                 Arkkitehtuuripäätökset (CRS, merkistöt, tiedostomuodot, kirjaston jakelu)
 docs/vaatimukset/         Vaatimusmäärittelyt (pohja: _pohja.md)
 data/raw → processed → products   (ei Gitiin)
 ```
